@@ -2,6 +2,9 @@ package com.fluxion.sote.auth.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.Set;
+import java.util.HashSet;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,19 +17,34 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, unique = true, length = 30)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String password;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 10)
     private String nickname;
 
     @Column(nullable = false, length = 20)
     private String role = "ROLE_USER";
 
-    @Column(nullable = false)
+    @Column(name = "birth_date", nullable = false)
+    private LocalDate birthDate;
+
+    /**
+     * 유저 ↔ 장르 다대다 매핑
+     * user_genres 조인 테이블을 통해 Genre 엔티티와 연결
+     */
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_genres",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "genre_id")
+    )
+    private Set<Genre> musicPreferences = new HashSet<>();
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // 기본 생성자
@@ -53,6 +71,14 @@ public class User {
         return role;
     }
 
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+
+    public Set<Genre> getMusicPreferences() {
+        return musicPreferences;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -72,6 +98,14 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public void setMusicPreferences(Set<Genre> musicPreferences) {
+        this.musicPreferences = musicPreferences;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
