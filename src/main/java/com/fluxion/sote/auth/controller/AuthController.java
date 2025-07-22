@@ -2,25 +2,28 @@ package com.fluxion.sote.auth.controller;
 
 import com.fluxion.sote.auth.dto.*;
 import com.fluxion.sote.auth.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
     private final AuthService authService;
+
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<Void> signup(@RequestBody SignupRequest req) {
+    public ResponseEntity<Void> signup(@Valid @RequestBody SignupRequest req) {
         authService.signup(req);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest req) {
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest req) {
         return ResponseEntity.ok(authService.login(req));
     }
 
@@ -33,5 +36,16 @@ public class AuthController {
     public ResponseEntity<Void> logout(@RequestBody String token) {
         authService.logout(token);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/find-email")
+    public ResponseEntity<FindEmailResponse> findEmail(@Valid @RequestBody FindEmailRequest req) {
+        return ResponseEntity.ok(authService.findEmail(req));
+    }
+
+    @PostMapping("/find-pwd")
+    public ResponseEntity<FindPwdResponse> findPassword(
+            @Valid @RequestBody FindPwdRequest req) {
+        return ResponseEntity.ok(authService.findPassword(req));
     }
 }

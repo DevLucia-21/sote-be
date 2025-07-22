@@ -32,6 +32,9 @@ public class User {
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
+    @Column(name = "security_answer", nullable = false, length = 100)
+    private String securityAnswer;
+
     /**
      * 유저 ↔ 장르 다대다 매핑
      * user_genres 조인 테이블을 통해 Genre 엔티티와 연결
@@ -75,6 +78,10 @@ public class User {
         return birthDate;
     }
 
+    public String getSecurityAnswer() {
+        return securityAnswer;
+    }
+
     public Set<Genre> getMusicPreferences() {
         return musicPreferences;
     }
@@ -102,6 +109,10 @@ public class User {
 
     public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
+    }
+
+    public void setSecurityAnswer(String securityAnswer) {
+        this.securityAnswer = securityAnswer;
     }
 
     public void setMusicPreferences(Set<Genre> musicPreferences) {
