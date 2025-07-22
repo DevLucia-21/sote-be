@@ -9,5 +9,6 @@ public record SignupRequest(
         @NotBlank @Size(min = 8) String password,
         @NotBlank @Size(max = 10) String nickname,
         @NotNull @PastOrPresent LocalDate birthDate,
-        @NotEmpty List<@NotNull Integer> musicPreferences
+        @NotEmpty List<@NotNull Integer> musicPreferences,
+        @NotBlank String securityAnswer
 ) {}

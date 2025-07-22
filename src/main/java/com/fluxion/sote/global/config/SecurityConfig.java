@@ -1,5 +1,6 @@
 package com.fluxion.sote.global.config;
 
+import com.fluxion.sote.global.config.JwtFilter;
 import com.fluxion.sote.global.util.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,16 +15,17 @@ import java.util.List;
 
 @Configuration
 public class SecurityConfig {
-    private final JwtUtil jwtUtil;
 
-    public SecurityConfig(JwtUtil jwtUtil) {
-        this.jwtUtil = jwtUtil;
+    private final JwtFilter jwtFilter;
+
+    public SecurityConfig(JwtFilter jwtFilter) {
+        this.jwtFilter = jwtFilter;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        HttpSecurity httpSecurity = http
-                // CORS 설정: React(3000) 등 외부 도메인에서 호출 허용
+        return http
+                // CORS 설정
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration cfg = new CorsConfiguration();
                     cfg.setAllowedOrigins(List.of("http://localhost:3000"));
@@ -36,7 +38,7 @@ public class SecurityConfig {
                 // CSRF 비활성화
                 .csrf(csrf -> csrf.disable())
 
-                // 세션 생성 없이 JWT 기반 stateless
+                // 세션 없이 JWT Stateless
                 .sessionManagement(sm ->
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -47,11 +49,13 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                // 직접 만든 JwtConfigurer 적용
-                .addFilterBefore(new JwtFilter(jwtUtil),
-                        UsernamePasswordAuthenticationFilter.class);
+                // JWT 필터를 스프링 시큐리티 필터 체인 앞단에 삽입
+                .addFilterBefore(
+                        jwtFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
 
-        return http.build();
+                .build();
     }
 
     @Bean

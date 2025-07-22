@@ -7,12 +7,14 @@ import com.fluxion.sote.auth.repository.UserRepository;
 import com.fluxion.sote.auth.repository.GenreRepository;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.JwtUtil;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -21,17 +23,20 @@ public class AuthServiceImpl implements AuthService {
     private final GenreRepository genreRepo;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RedisTemplate<String, String> redis;
 
     public AuthServiceImpl(
             UserRepository userRepo,
             GenreRepository genreRepo,
             BCryptPasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil
+            JwtUtil jwtUtil,
+            RedisTemplate<String, String> redisTemplate
     ) {
         this.userRepo        = userRepo;
         this.genreRepo       = genreRepo;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil         = jwtUtil;
+        this.redis           = redisTemplate;
     }
 
     @Override
@@ -51,6 +56,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(req.password()));
         user.setNickname(req.nickname());
         user.setBirthDate(req.birthDate());
+        user.setSecurityAnswer(req.securityAnswer());
         user.setMusicPreferences(Set.copyOf(genres));
         userRepo.save(user);
     }
@@ -63,34 +69,75 @@ public class AuthServiceImpl implements AuthService {
         if (!passwordEncoder.matches(req.password(), user.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 올바르지 않습니다.");
         }
+
+        // Access token
         String access  = jwtUtil.createAccessToken(user.getId(), user.getRole());
+
+        // Refresh token with jti
         String refresh = jwtUtil.createRefreshToken(user.getId(), user.getRole());
+        String jti     = jwtUtil.getJti(refresh);
+
+        // Store refresh jti in Redis with TTL
+        redis.opsForValue()
+                .set("refresh:" + jti, user.getId().toString(),
+                        jwtUtil.getRefreshExpiry(), TimeUnit.MILLISECONDS);
+
         return new TokenResponse(access, refresh, jwtUtil.getAccessExpiry());
     }
 
     @Override
     @Transactional(readOnly = true)
     public TokenResponse refresh(String refreshToken) {
-        Long userId = jwtUtil.validateRefreshToken(refreshToken);
-        User user   = userRepo.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
-        String newAccess  = jwtUtil.createAccessToken(userId, user.getRole());
-        String newRefresh = jwtUtil.createRefreshToken(userId, user.getRole());
+        // Validate token signature & expiry
+        jwtUtil.validateRefreshToken(refreshToken);
+
+        // Extract jti and userId
+        String oldJti = jwtUtil.getJti(refreshToken);
+        Long userId   = jwtUtil.getUserIdFromRefreshToken(refreshToken);
+
+        // Check existence in Redis
+        String key = "refresh:" + oldJti;
+        Boolean exists = redis.hasKey(key);
+        if (exists == null || !exists) {
+            throw new IllegalArgumentException("유효하지 않은 리프레시 토큰입니다.");
+        }
+
+        // Remove old jti
+        redis.delete(key);
+
+        // Issue new tokens
+        String newAccess  = jwtUtil.createAccessToken(userId, userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("유효하지 않은 사용자입니다."))
+                .getRole());
+        String newRefresh = jwtUtil.createRefreshToken(userId, userRepo.findById(userId).get().getRole());
+        String newJti     = jwtUtil.getJti(newRefresh);
+
+        // Store new jti
+        redis.opsForValue()
+                .set("refresh:" + newJti, userId.toString(),
+                        jwtUtil.getRefreshExpiry(), TimeUnit.MILLISECONDS);
+
         return new TokenResponse(newAccess, newRefresh, jwtUtil.getAccessExpiry());
     }
 
     @Override
     public void logout(String refreshToken) {
-        // 필요 시 Redis 등에서 리프레시 토큰 블랙리스트 처리
+        // Extract jti
+        String jti = jwtUtil.getJti(refreshToken);
+        String key = "refresh:" + jti;
+
+        // Determine remaining TTL
+        Long ttl = redis.getExpire(key, TimeUnit.MILLISECONDS);
+        if (ttl != null && ttl > 0) {
+            // Blacklist old token
+            redis.opsForValue()
+                    .set("blacklist:" + jti, "logout",
+                            ttl, TimeUnit.MILLISECONDS);
+            // Remove from valid refresh set
+            redis.delete(key);
+        }
     }
 
-    /**
-     * 닉네임과 보안 질문 답변이 일치하는 회원의 이메일을 조회합니다.
-     *
-     * @param req 닉네임과 보안 답변을 담은 DTO
-     * @return 이메일을 담은 응답 DTO
-     * @throws ResourceNotFoundException 조회된 회원이 없으면 예외 발생
-     */
     @Override
     @Transactional(readOnly = true)
     public FindEmailResponse findEmail(FindEmailRequest req) {
