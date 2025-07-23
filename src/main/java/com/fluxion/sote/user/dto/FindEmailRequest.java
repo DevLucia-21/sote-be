@@ -1,4 +1,4 @@
-package com.fluxion.sote.auth.dto;
+package com.fluxion.sote.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
