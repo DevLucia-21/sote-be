@@ -27,63 +27,61 @@ public class UserServiceImpl implements UserService {
             BCryptPasswordEncoder passwordEncoder,
             JavaMailSender mailSender
     ) {
-        this.userRepo        = userRepo;
+        this.userRepo = userRepo;
         this.passwordEncoder = passwordEncoder;
-        this.mailSender      = mailSender;
+        this.mailSender = mailSender;
     }
 
     @Override
     @Transactional(readOnly = true)
     public FindEmailResponse findEmail(FindEmailRequest req) {
-        String email = userRepo.findByNicknameAndSecurityAnswer(
-                        req.getNickname(), req.getSecurityAnswer()
-                )
-                .map(User::getEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("해당 회원이 없습니다."));
-        return new FindEmailResponse(email);
+        User user = findUserByNicknameAndAnswer(req.getNickname(), req.getSecurityAnswer());
+        return new FindEmailResponse(user.getEmail());
     }
 
     @Override
     @Transactional(readOnly = true)
     public FindPwdResponse findPassword(FindPwdRequest req) {
-        String pwd = userRepo.findByEmailAndSecurityAnswer(
-                        req.getEmail(), req.getSecurityAnswer()
-                )
-                .map(User::getPassword)
-                .orElseThrow(() -> new ResourceNotFoundException("해당 회원이 없습니다."));
-        return new FindPwdResponse(pwd);
+        User user = findUserByEmailAndAnswer(req.getEmail(), req.getSecurityAnswer());
+        return new FindPwdResponse(user.getPassword());
     }
 
-    /**
-     * 이메일과 보안 답변이 일치할 때
-     * 임시 비밀번호를 생성·저장하고 이메일로 전송합니다.
-     */
     @Override
     @Transactional
     public void resetPasswordWithTemp(FindPwdRequest req) {
-        User user = userRepo.findByEmailAndSecurityAnswer(
-                        req.getEmail(), req.getSecurityAnswer()
-                )
-                .orElseThrow(() -> new ResourceNotFoundException("해당 회원이 없습니다."));
+        User user = findUserByEmailAndAnswer(req.getEmail(), req.getSecurityAnswer());
 
-        // 1) 임시 비밀번호 생성 (8문자)
-        String temp = UUID.randomUUID().toString().substring(0, 8);
-
-        // 2) DB에 해시 저장
-        user.setPassword(passwordEncoder.encode(temp));
+        String tempPassword = generateTemporaryPassword();
+        user.setPassword(passwordEncoder.encode(tempPassword));
         userRepo.save(user);
 
-        // 3) 이메일 발송
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setTo(user.getEmail());
-        msg.setSubject("Sote 임시 비밀번호 안내");
-        msg.setText(
+        sendTemporaryPasswordEmail(user.getEmail(), tempPassword);
+    }
+
+    private User findUserByNicknameAndAnswer(String nickname, String answer) {
+        return userRepo.findByNicknameAndSecurityAnswer(nickname, answer)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 회원이 없습니다."));
+    }
+
+    private User findUserByEmailAndAnswer(String email, String answer) {
+        return userRepo.findByEmailAndSecurityAnswer(email, answer)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 회원이 없습니다."));
+    }
+
+    private String generateTemporaryPassword() {
+        return UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private void sendTemporaryPasswordEmail(String to, String temp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("Sote 임시 비밀번호 안내");
+        message.setText(
                 "안녕하세요, Sote입니다.\n\n" +
                         "귀하의 임시 비밀번호는 다음과 같습니다:\n" +
-                        temp + "\n\n" +
-                        "로그인 후 반드시 비밀번호를 변경해 주세요.\n\n" +
-                        "감사합니다."
+                        temp +
+                        "\n\n로그인 후 반드시 비밀번호를 변경해 주세요.\n\n감사합니다."
         );
-        mailSender.send(msg);
+        mailSender.send(message);
     }
 }

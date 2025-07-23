@@ -10,6 +10,9 @@ import java.security.Key;
 import java.util.Date;
 import java.util.UUID;
 
+/**
+ * JWT 발급 및 검증을 위한 유틸리티 클래스입니다.
+ */
 @Component
 public class JwtUtil {
 
@@ -17,16 +20,20 @@ public class JwtUtil {
     private String secretKey;
 
     @Value("${jwt.access-expiration-ms}")
-    private long accessMs;      // 예: 3600000 (1시간)
+    private long accessMs;
 
     @Value("${jwt.refresh-expiration-ms}")
-    private long refreshMs;     // 예: 86400000 (24시간)
+    private long refreshMs;
 
     private Key key;
+    private JwtParser parser;
 
     @PostConstruct
     public void init() {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
+        this.parser = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build();
     }
 
     /**
@@ -50,7 +57,7 @@ public class JwtUtil {
         Date now = new Date();
         String jti = UUID.randomUUID().toString();
         return Jwts.builder()
-                .setId(jti)                         // jti 클레임에 고유 ID 삽입
+                .setId(jti)
                 .setSubject(userId.toString())
                 .claim("role", role)
                 .setIssuedAt(now)
@@ -60,49 +67,52 @@ public class JwtUtil {
     }
 
     /**
-     * Access Token 서명·만료 검증
+     * 주어진 토큰을 검증 (서명 및 만료)
+     */
+    private Claims parseClaims(String token) {
+        return parser.parseClaimsJws(token).getBody();
+    }
+
+    /**
+     * Access Token 검증
      */
     public void validateAccessToken(String token) {
-        parser().parseClaimsJws(token);
+        parseClaims(token);
     }
 
     /**
-     * Refresh Token 서명·만료 검증 (ID 검증은 서비스 레이어에서 처리)
+     * Refresh Token 검증
      */
     public void validateRefreshToken(String token) {
-        parser().parseClaimsJws(token);
+        parseClaims(token);
     }
 
     /**
-     * 주어진 Access Token의 subject(userId) 반환
+     * Access Token에서 userId 추출
      */
     public Long getUserIdFromAccessToken(String token) {
-        Claims claims = parser().parseClaimsJws(token).getBody();
-        return Long.valueOf(claims.getSubject());
+        return Long.valueOf(parseClaims(token).getSubject());
     }
 
     /**
-     * 주어진 Refresh Token의 jti(claim) 추출
+     * Refresh Token의 jti 추출
      */
     public String getJti(String token) {
-        Claims claims = parser().parseClaimsJws(token).getBody();
-        return claims.getId();
+        return parseClaims(token).getId();
     }
 
     /**
-     * 주어진 Refresh Token의 subject(userId) 반환
+     * Refresh Token에서 userId 추출
      */
     public Long getUserIdFromRefreshToken(String token) {
-        Claims claims = parser().parseClaimsJws(token).getBody();
-        return Long.valueOf(claims.getSubject());
+        return Long.valueOf(parseClaims(token).getSubject());
     }
 
     /**
      * 토큰에서 role 클레임 추출
      */
     public String getRole(String token) {
-        Claims claims = parser().parseClaimsJws(token).getBody();
-        return claims.get("role", String.class);
+        return parseClaims(token).get("role", String.class);
     }
 
     /**
@@ -117,12 +127,5 @@ public class JwtUtil {
      */
     public long getRefreshExpiry() {
         return refreshMs;
-    }
-
-    // JWT 파서 공통 메서드
-    private JwtParser parser() {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build();
     }
 }

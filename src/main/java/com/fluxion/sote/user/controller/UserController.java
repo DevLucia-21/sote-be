@@ -1,5 +1,7 @@
+// src/main/java/com/fluxion/sote/user/controller/UserController.java
 package com.fluxion.sote.user.controller;
 
+import com.fluxion.sote.global.util.ResponseUtil;
 import com.fluxion.sote.user.dto.FindEmailRequest;
 import com.fluxion.sote.user.dto.FindEmailResponse;
 import com.fluxion.sote.user.dto.FindPwdRequest;
@@ -27,7 +29,7 @@ public class UserController {
     public ResponseEntity<FindEmailResponse> findEmail(
             @Valid @RequestBody FindEmailRequest req) {
         FindEmailResponse resp = userService.findEmail(req);
-        return ResponseEntity.ok(resp);
+        return ResponseUtil.ok(resp);
     }
 
     /**
@@ -38,7 +40,7 @@ public class UserController {
     public ResponseEntity<FindPwdResponse> findPassword(
             @Valid @RequestBody FindPwdRequest req) {
         FindPwdResponse resp = userService.findPassword(req);
-        return ResponseEntity.ok(resp);
+        return ResponseUtil.ok(resp);
     }
 
     /**
@@ -49,6 +51,6 @@ public class UserController {
     public ResponseEntity<Void> resetWithTemp(
             @Valid @RequestBody FindPwdRequest req) {
         userService.resetPasswordWithTemp(req);
-        return ResponseEntity.ok().build();
+        return ResponseUtil.noContent();  // 204 No Content
     }
 }
