@@ -19,9 +19,9 @@ INSERT INTO public.users (
   music_preferences
 )
 VALUES (
-  'test@fluxion.com',
+  'rlxkemd21@gmail.com',
   -- BCryptPasswordEncoder.encode("pass1234")로 생성한 암호 해시 예시
-  '$2a$10$H6JAXk/RLamz0dqo8h2he.FrQ2dZ3VO0RjMb/LgIuEe1skZsHQKvS',
+  '$2a$10$RPUXf.IMjszb5Q6t9EzyZ.Z2Nq.46zBoOJVdCzzLlzlLhS3sxjLjK',
   'tester',
   'ROLE_USER',
   '1990-01-01',

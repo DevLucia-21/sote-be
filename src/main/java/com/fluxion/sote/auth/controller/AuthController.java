@@ -48,4 +48,14 @@ public class AuthController {
             @Valid @RequestBody FindPwdRequest req) {
         return ResponseEntity.ok(authService.findPassword(req));
     }
+
+    /**
+     * 보안 질문이 일치하는 회원에게 임시 비밀번호를 발급해 이메일로 전송합니다.
+     */
+    @PostMapping("/password-reset-temp")
+    public ResponseEntity<Void> resetWithTemp(
+            @Valid @RequestBody FindPwdRequest req) {
+        authService.resetPasswordWithTemp(req);
+        return ResponseEntity.ok().build();
+    }
 }

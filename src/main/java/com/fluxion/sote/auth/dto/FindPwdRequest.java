@@ -34,4 +34,5 @@ public class FindPwdRequest {
     public void setSecurityAnswer(String securityAnswer) {
         this.securityAnswer = securityAnswer;
     }
+
 }

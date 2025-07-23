@@ -8,12 +8,15 @@ import com.fluxion.sote.auth.repository.GenreRepository;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.JwtUtil;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -24,19 +27,22 @@ public class AuthServiceImpl implements AuthService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, String> redis;
+    private final JavaMailSender mailSender;
 
     public AuthServiceImpl(
             UserRepository userRepo,
             GenreRepository genreRepo,
             BCryptPasswordEncoder passwordEncoder,
             JwtUtil jwtUtil,
-            RedisTemplate<String, String> redisTemplate
+            RedisTemplate<String, String> redisTemplate,
+            JavaMailSender mailSender
     ) {
         this.userRepo        = userRepo;
         this.genreRepo       = genreRepo;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil         = jwtUtil;
         this.redis           = redisTemplate;
+        this.mailSender      = mailSender;
     }
 
     @Override
@@ -88,31 +94,25 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public TokenResponse refresh(String refreshToken) {
-        // Validate token signature & expiry
         jwtUtil.validateRefreshToken(refreshToken);
 
-        // Extract jti and userId
         String oldJti = jwtUtil.getJti(refreshToken);
         Long userId   = jwtUtil.getUserIdFromRefreshToken(refreshToken);
 
-        // Check existence in Redis
         String key = "refresh:" + oldJti;
         Boolean exists = redis.hasKey(key);
         if (exists == null || !exists) {
             throw new IllegalArgumentException("유효하지 않은 리프레시 토큰입니다.");
         }
 
-        // Remove old jti
         redis.delete(key);
 
-        // Issue new tokens
-        String newAccess  = jwtUtil.createAccessToken(userId, userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("유효하지 않은 사용자입니다."))
-                .getRole());
-        String newRefresh = jwtUtil.createRefreshToken(userId, userRepo.findById(userId).get().getRole());
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("유효하지 않은 사용자입니다."));
+        String newAccess  = jwtUtil.createAccessToken(userId, user.getRole());
+        String newRefresh = jwtUtil.createRefreshToken(userId, user.getRole());
         String newJti     = jwtUtil.getJti(newRefresh);
 
-        // Store new jti
         redis.opsForValue()
                 .set("refresh:" + newJti, userId.toString(),
                         jwtUtil.getRefreshExpiry(), TimeUnit.MILLISECONDS);
@@ -122,18 +122,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(String refreshToken) {
-        // Extract jti
         String jti = jwtUtil.getJti(refreshToken);
         String key = "refresh:" + jti;
 
-        // Determine remaining TTL
         Long ttl = redis.getExpire(key, TimeUnit.MILLISECONDS);
         if (ttl != null && ttl > 0) {
-            // Blacklist old token
             redis.opsForValue()
-                    .set("blacklist:" + jti, "logout",
-                            ttl, TimeUnit.MILLISECONDS);
-            // Remove from valid refresh set
+                    .set("blacklist:" + jti, "logout", ttl, TimeUnit.MILLISECONDS);
             redis.delete(key);
         }
     }
@@ -158,5 +153,38 @@ public class AuthServiceImpl implements AuthService {
                 .map(User::getPassword)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 회원이 없습니다."));
         return new FindPwdResponse(pwd);
+    }
+
+    /**
+     * 이메일과 보안 답변이 일치할 때
+     * 임시 비밀번호를 생성·저장하고 이메일로 전송합니다.
+     */
+    @Override
+    @Transactional
+    public void resetPasswordWithTemp(FindPwdRequest req) {
+        User user = userRepo.findByEmailAndSecurityAnswer(
+                        req.getEmail(), req.getSecurityAnswer()
+                )
+                .orElseThrow(() -> new ResourceNotFoundException("해당 회원이 없습니다."));
+
+        // 1) 임시 비밀번호 생성 (8문자)
+        String temp = UUID.randomUUID().toString().substring(0, 8);
+
+        // 2) DB에 해시 저장
+        user.setPassword(passwordEncoder.encode(temp));
+        userRepo.save(user);
+
+        // 3) 이메일 발송
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setTo(user.getEmail());
+        msg.setSubject("Sote 임시 비밀번호 안내");
+        msg.setText(
+                "안녕하세요, Sote입니다.\n\n" +
+                        "귀하의 임시 비밀번호는 다음과 같습니다:\n" +
+                        temp + "\n\n" +
+                        "로그인 후 반드시 비밀번호를 변경해 주세요.\n\n" +
+                        "감사합니다."
+        );
+        mailSender.send(msg);
     }
 }

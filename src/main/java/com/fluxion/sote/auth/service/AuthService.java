@@ -56,4 +56,12 @@ public interface AuthService {
      *         조회된 회원이 없으면 예외 발생
      */
     FindPwdResponse findPassword(FindPwdRequest req);
+
+    /**
+     * 이메일과 보안 질문 답변이 일치하는 회원에게
+     * 임시 비밀번호를 생성·저장하고, 이메일로 발송합니다.
+     *
+     * @param req 이메일 및 보안 답변 DTO
+     */
+    void resetPasswordWithTemp(FindPwdRequest req);
 }
