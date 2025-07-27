@@ -37,4 +37,10 @@ public interface UserService {
      * @param req 이메일 및 보안 답변 DTO
      */
     void resetPasswordWithTemp(FindPwdRequest req);
+
+    /**
+     * 사용자ID, 질문ID, 답변을 받아 보안 질문 일치 여부를 확인
+     * @return 일치하면 true, 아니면 false
+     */
+    boolean checkSecurity(Long userId, Integer questionId, String answer);
 }
