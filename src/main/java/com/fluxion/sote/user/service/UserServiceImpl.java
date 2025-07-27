@@ -1,5 +1,7 @@
 package com.fluxion.sote.user.service;
 
+import com.fluxion.sote.auth.entity.UserSecurityAnswer;
+import com.fluxion.sote.auth.repository.UserSecurityAnswerRepository;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.user.dto.FindEmailRequest;
@@ -18,15 +20,18 @@ import java.util.UUID;
 @Service
 public class UserServiceImpl implements UserService {
 
+    private final UserSecurityAnswerRepository userSecurityAnswerRepository;
     private final UserRepository userRepo;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
 
     public UserServiceImpl(
+            UserSecurityAnswerRepository userSecurityAnswerRepository,
             UserRepository userRepo,
             BCryptPasswordEncoder passwordEncoder,
             JavaMailSender mailSender
     ) {
+        this.userSecurityAnswerRepository = userSecurityAnswerRepository;
         this.userRepo = userRepo;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
@@ -35,39 +40,67 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public FindEmailResponse findEmail(FindEmailRequest req) {
-        User user = findUserByNicknameAndAnswer(req.getNickname(), req.getSecurityAnswer());
+        // 1) 보안 질문 일치 여부 확인
+        UserSecurityAnswer usa = userSecurityAnswerRepository
+                .findByUserIdAndQuestionId(req.getUserId(), req.getQuestionId())
+                .orElseThrow(() -> new ResourceNotFoundException("질문–답이 일치하지 않습니다."));
+        if (!passwordEncoder.matches(req.getSecurityAnswer(), usa.getAnswerEncrypted())) {
+            throw new ResourceNotFoundException("질문–답이 일치하지 않습니다.");
+        }
+
+        // 2) 이메일 조회
+        User user = userRepo.findById(usa.getUser().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("해당 사용자가 없습니다."));
         return new FindEmailResponse(user.getEmail());
     }
 
     @Override
     @Transactional(readOnly = true)
     public FindPwdResponse findPassword(FindPwdRequest req) {
-        User user = findUserByEmailAndAnswer(req.getEmail(), req.getSecurityAnswer());
+        // 1) 보안 질문 일치 여부 확인
+        UserSecurityAnswer usa = userSecurityAnswerRepository
+                .findByUserIdAndQuestionId(req.getUserId(), req.getQuestionId())
+                .orElseThrow(() -> new ResourceNotFoundException("질문–답이 일치하지 않습니다."));
+        if (!passwordEncoder.matches(req.getSecurityAnswer(), usa.getAnswerEncrypted())) {
+            throw new ResourceNotFoundException("질문–답이 일치하지 않습니다.");
+        }
+
+        // 2) 해시된 비밀번호 반환 (혹은 보안상 토큰 발급 로직으로 변경)
+        User user = userRepo.findById(usa.getUser().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("해당 사용자가 없습니다."));
         return new FindPwdResponse(user.getPassword());
     }
 
     @Override
     @Transactional
     public void resetPasswordWithTemp(FindPwdRequest req) {
-        User user = findUserByEmailAndAnswer(req.getEmail(), req.getSecurityAnswer());
+        // 1) 보안 질문 일치 여부 확인
+        UserSecurityAnswer usa = userSecurityAnswerRepository
+                .findByUserIdAndQuestionId(req.getUserId(), req.getQuestionId())
+                .orElseThrow(() -> new ResourceNotFoundException("질문–답이 일치하지 않습니다."));
+        if (!passwordEncoder.matches(req.getSecurityAnswer(), usa.getAnswerEncrypted())) {
+            throw new ResourceNotFoundException("질문–답이 일치하지 않습니다.");
+        }
 
+        // 2) 임시 비밀번호 생성·저장
+        User user = usa.getUser();
         String tempPassword = generateTemporaryPassword();
         user.setPassword(passwordEncoder.encode(tempPassword));
         userRepo.save(user);
 
+        // 3) 이메일 발송
         sendTemporaryPasswordEmail(user.getEmail(), tempPassword);
     }
 
-    private User findUserByNicknameAndAnswer(String nickname, String answer) {
-        return userRepo.findByNicknameAndSecurityAnswer(nickname, answer)
-                .orElseThrow(() -> new ResourceNotFoundException("해당 회원이 없습니다."));
+    @Override
+    public boolean checkSecurity(Long userId, Integer questionId, String answer) {
+        return userSecurityAnswerRepository
+                .findByUserIdAndQuestionId(userId, questionId)
+                .map(usa -> passwordEncoder.matches(answer, usa.getAnswerEncrypted()))
+                .orElse(false);
     }
 
-    private User findUserByEmailAndAnswer(String email, String answer) {
-        return userRepo.findByEmailAndSecurityAnswer(email, answer)
-                .orElseThrow(() -> new ResourceNotFoundException("해당 회원이 없습니다."));
-    }
-
+    // ----------------------------------------------------------------
     private String generateTemporaryPassword() {
         return UUID.randomUUID().toString().substring(0, 8);
     }

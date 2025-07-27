@@ -1,6 +1,8 @@
 // src/main/java/com/fluxion/sote/user/controller/UserController.java
 package com.fluxion.sote.user.controller;
 
+import com.fluxion.sote.auth.dto.SecurityCheckRequest;
+import com.fluxion.sote.auth.dto.SecurityCheckResponse;
 import com.fluxion.sote.global.util.ResponseUtil;
 import com.fluxion.sote.user.dto.FindEmailRequest;
 import com.fluxion.sote.user.dto.FindEmailResponse;
@@ -52,5 +54,13 @@ public class UserController {
             @Valid @RequestBody FindPwdRequest req) {
         userService.resetPasswordWithTemp(req);
         return ResponseUtil.noContent();  // 204 No Content
+    }
+
+    @PostMapping("/check-security")
+    public ResponseEntity<SecurityCheckResponse> checkSecurity(
+            @RequestBody SecurityCheckRequest req) {
+        boolean ok = userService.checkSecurity(
+                req.getUserId(), req.getQuestionId(), req.getAnswer());
+        return ResponseEntity.ok(new SecurityCheckResponse(ok));
     }
 }
