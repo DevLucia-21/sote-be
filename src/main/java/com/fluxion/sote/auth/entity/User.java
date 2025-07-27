@@ -1,5 +1,6 @@
 package com.fluxion.sote.auth.entity;
 
+import com.fluxion.sote.user.enums.NotificationType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
@@ -50,6 +51,18 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "character", nullable = false, length = 20)
+    private String character = "piano";
+
+    @Column(name = "profile_image_url", length = 255)
+    private String profileImageUrl;
+
+    @ElementCollection(targetClass = NotificationType.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_notifications", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "notification_type")
+    private Set<NotificationType> enabledNotifications = new HashSet<>();
+
     // 기본 생성자
     public User() {}
 
@@ -90,6 +103,18 @@ public class User {
         return createdAt;
     }
 
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public String getCharacter() {
+        return character;
+    }
+
+    public Set<NotificationType> getEnabledNotifications() {
+        return enabledNotifications;
+    }
+
     // Setters
     public void setEmail(String email) {
         this.email = email;
@@ -121,5 +146,17 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    public void setCharacter(String character) {
+        this.character = character;
+    }
+
+    public void setEnabledNotifications(Set<NotificationType> enabledNotifications) {
+        this.enabledNotifications = enabledNotifications;
     }
 }

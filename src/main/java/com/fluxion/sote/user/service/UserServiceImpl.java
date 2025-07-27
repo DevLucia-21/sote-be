@@ -4,10 +4,9 @@ import com.fluxion.sote.auth.entity.UserSecurityAnswer;
 import com.fluxion.sote.auth.repository.UserSecurityAnswerRepository;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
-import com.fluxion.sote.user.dto.FindEmailRequest;
-import com.fluxion.sote.user.dto.FindEmailResponse;
-import com.fluxion.sote.user.dto.FindPwdRequest;
-import com.fluxion.sote.user.dto.FindPwdResponse;
+import com.fluxion.sote.global.util.SecurityUtil;
+import com.fluxion.sote.user.dto.*;
+import com.fluxion.sote.user.enums.NotificationType;
 import com.fluxion.sote.user.repository.UserRepository;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -15,6 +14,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -40,15 +41,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public FindEmailResponse findEmail(FindEmailRequest req) {
-        // 1) 보안 질문 일치 여부 확인
         UserSecurityAnswer usa = userSecurityAnswerRepository
                 .findByUserIdAndQuestionId(req.getUserId(), req.getQuestionId())
                 .orElseThrow(() -> new ResourceNotFoundException("질문–답이 일치하지 않습니다."));
         if (!passwordEncoder.matches(req.getSecurityAnswer(), usa.getAnswerEncrypted())) {
             throw new ResourceNotFoundException("질문–답이 일치하지 않습니다.");
         }
-
-        // 2) 이메일 조회
         User user = userRepo.findById(usa.getUser().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 사용자가 없습니다."));
         return new FindEmailResponse(user.getEmail());
@@ -57,15 +55,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public FindPwdResponse findPassword(FindPwdRequest req) {
-        // 1) 보안 질문 일치 여부 확인
         UserSecurityAnswer usa = userSecurityAnswerRepository
                 .findByUserIdAndQuestionId(req.getUserId(), req.getQuestionId())
                 .orElseThrow(() -> new ResourceNotFoundException("질문–답이 일치하지 않습니다."));
         if (!passwordEncoder.matches(req.getSecurityAnswer(), usa.getAnswerEncrypted())) {
             throw new ResourceNotFoundException("질문–답이 일치하지 않습니다.");
         }
-
-        // 2) 해시된 비밀번호 반환 (혹은 보안상 토큰 발급 로직으로 변경)
         User user = userRepo.findById(usa.getUser().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 사용자가 없습니다."));
         return new FindPwdResponse(user.getPassword());
@@ -74,21 +69,16 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void resetPasswordWithTemp(FindPwdRequest req) {
-        // 1) 보안 질문 일치 여부 확인
         UserSecurityAnswer usa = userSecurityAnswerRepository
                 .findByUserIdAndQuestionId(req.getUserId(), req.getQuestionId())
                 .orElseThrow(() -> new ResourceNotFoundException("질문–답이 일치하지 않습니다."));
         if (!passwordEncoder.matches(req.getSecurityAnswer(), usa.getAnswerEncrypted())) {
             throw new ResourceNotFoundException("질문–답이 일치하지 않습니다.");
         }
-
-        // 2) 임시 비밀번호 생성·저장
         User user = usa.getUser();
         String tempPassword = generateTemporaryPassword();
         user.setPassword(passwordEncoder.encode(tempPassword));
         userRepo.save(user);
-
-        // 3) 이메일 발송
         sendTemporaryPasswordEmail(user.getEmail(), tempPassword);
     }
 
@@ -100,7 +90,53 @@ public class UserServiceImpl implements UserService {
                 .orElse(false);
     }
 
-    // ----------------------------------------------------------------
+    @Override
+    @Transactional(readOnly = true)
+    public UserProfileResponse getMyProfile() {
+        User user = getCurrentUser();
+        int totalDiaryCount = 0; // TODO: 일기 수 연동 시 교체
+        List<String> savedImages = List.of(); // TODO: 이미지 연동 시 교체
+
+        return new UserProfileResponse(
+                user.getNickname(),
+                user.getCharacter(),
+                user.getProfileImageUrl(),
+                totalDiaryCount,
+                savedImages
+        );
+    }
+
+    @Override
+    public void updateMyProfile(UserProfileUpdateRequest request) {
+        User user = getCurrentUser();
+        user.setNickname(request.getNickname());
+        user.setCharacter(request.getCharacter());
+        user.setProfileImageUrl(request.getProfileImageUrl());
+        userRepo.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserSettingsResponse getUserSettings() {
+        User user = getCurrentUser();
+        return new UserSettingsResponse(user.getEnabledNotifications());
+    }
+
+    @Override
+    @Transactional
+    public void updateUserSettings(UserSettingsRequest request) {
+        User user = getCurrentUser();
+        Set<NotificationType> newSettings = request.getEnabledNotifications();
+        user.setEnabledNotifications(newSettings);
+        userRepo.save(user);
+    }
+
+    private User getCurrentUser() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        return userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("로그인된 사용자를 찾을 수 없습니다."));
+    }
+
     private String generateTemporaryPassword() {
         return UUID.randomUUID().toString().substring(0, 8);
     }

@@ -5,9 +5,11 @@ CREATE TABLE IF NOT EXISTS public.users (
   nickname            VARCHAR(50)  NOT NULL,
   role                VARCHAR(20)  NOT NULL DEFAULT 'ROLE_USER',
   birth_date          DATE         NOT NULL,
-  security_answer     VARCHAR(100) NOT NULL DEFAULT '',      -- 추가된 컬럼
+  security_answer     VARCHAR(100) NOT NULL DEFAULT '',
   music_preferences   TEXT[]       NOT NULL,
-  created_at          TIMESTAMP    NOT NULL DEFAULT now()
+  created_at          TIMESTAMP    NOT NULL DEFAULT now(),
+  profile_image_url   VARCHAR(255),
+  character           VARCHAR(20)  NOT NULL DEFAULT 'piano'
 );
 
 CREATE TABLE IF NOT EXISTS public.genres (
