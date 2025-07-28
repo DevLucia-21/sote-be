@@ -1,13 +1,13 @@
-package com.fluxion.sote.user.dto;
+package com.fluxion.sote.notification.dto;
 
-import com.fluxion.sote.user.enums.NotificationType;
+import com.fluxion.sote.notification.enums.NotificationType;
 import java.util.Set;
 
-public class UserSettingsResponse {
+public class NotificationSettingResponse {
 
     private Set<NotificationType> enabledNotifications;
 
-    public UserSettingsResponse(Set<NotificationType> enabledNotifications) {
+    public NotificationSettingResponse(Set<NotificationType> enabledNotifications) {
         this.enabledNotifications = enabledNotifications;
     }
 

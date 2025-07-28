@@ -6,7 +6,6 @@ import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.SecurityUtil;
 import com.fluxion.sote.user.dto.*;
-import com.fluxion.sote.user.enums.NotificationType;
 import com.fluxion.sote.user.repository.UserRepository;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -17,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -114,22 +112,6 @@ public class UserServiceImpl implements UserService {
         user.setNickname(request.getNickname());
         user.setCharacter(request.getCharacter());
         user.setProfileImageUrl(request.getProfileImageUrl());
-        userRepo.save(user);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public UserSettingsResponse getUserSettings() {
-        User user = getCurrentUser();
-        return new UserSettingsResponse(user.getEnabledNotifications());
-    }
-
-    @Override
-    @Transactional
-    public void updateUserSettings(UserSettingsRequest request) {
-        User user = getCurrentUser();
-        Set<NotificationType> newSettings = request.getEnabledNotifications();
-        user.setEnabledNotifications(newSettings);
         userRepo.save(user);
     }
 

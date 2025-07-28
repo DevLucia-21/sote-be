@@ -1,4 +1,4 @@
-package com.fluxion.sote.user.enums;
+package com.fluxion.sote.notification.enums;
 
 public enum NotificationType {
     DIARY,              // 오늘의 일기 작성 알림

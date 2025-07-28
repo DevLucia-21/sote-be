@@ -1,10 +1,13 @@
-package com.fluxion.sote.user.dto;
+package com.fluxion.sote.notification.dto;
 
-import com.fluxion.sote.user.enums.NotificationType;
+import com.fluxion.sote.notification.enums.NotificationType;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.Set;
 
-public class UserSettingsRequest {
+public class NotificationSettingRequest {
 
+    @NotNull
     private Set<NotificationType> enabledNotifications;
 
     public Set<NotificationType> getEnabledNotifications() {

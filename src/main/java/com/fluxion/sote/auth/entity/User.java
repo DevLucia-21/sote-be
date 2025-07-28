@@ -1,9 +1,12 @@
 package com.fluxion.sote.auth.entity;
 
-import com.fluxion.sote.user.enums.NotificationType;
+import com.fluxion.sote.notification.entity.FcmToken;
+import com.fluxion.sote.notification.enums.NotificationType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import lombok.Getter;
@@ -67,6 +70,9 @@ public class User {
     @Column(name = "profile_image")
     private byte[] profileImage;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FcmToken> fcmTokens = new ArrayList<>();
+
     // 기본 생성자
     public User() {}
 
@@ -123,6 +129,10 @@ public class User {
         return profileImage;
     }
 
+    public List<FcmToken> getFcmTokens() {
+        return fcmTokens;
+    }
+
     // Setters
     public void setEmail(String email) {
         this.email = email;
@@ -170,5 +180,27 @@ public class User {
 
     public void setProfileImage(byte[] profileImage) {
         this.profileImage = profileImage;
+    }
+
+    public void setFcmTokens(List<FcmToken> fcmTokens) {
+        this.fcmTokens = fcmTokens;
+    }
+
+    // 편의 메서드
+
+    // 중복 방지 토큰 추가
+    public void addFcmToken(FcmToken token) {
+        boolean exists = fcmTokens.stream()
+                .anyMatch(t -> t.getToken().equals(token.getToken()));
+        if (!exists) {
+            fcmTokens.add(token);
+            token.setUser(this);
+        }
+    }
+
+    // 토큰 제거
+    public void removeFcmToken(FcmToken token) {
+        fcmTokens.remove(token);
+        token.setUser(null);
     }
 }

@@ -54,10 +54,6 @@ public interface UserService {
      */
     void updateMyProfile(UserProfileUpdateRequest request);
 
-    UserSettingsResponse getUserSettings();
-
-    void updateUserSettings(UserSettingsRequest request);
-
     void updateProfileImage(MultipartFile image);
 
     void deleteProfileImage();
