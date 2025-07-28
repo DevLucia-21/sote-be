@@ -1,6 +1,7 @@
 package com.fluxion.sote.user.service;
 
 import com.fluxion.sote.user.dto.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 사용자 계정 복구 및 프로필 관련 비즈니스 로직을 정의하는 인터페이스입니다.
@@ -56,4 +57,8 @@ public interface UserService {
     UserSettingsResponse getUserSettings();
 
     void updateUserSettings(UserSettingsRequest request);
+
+    void updateProfileImage(MultipartFile image);
+
+    void deleteProfileImage();
 }

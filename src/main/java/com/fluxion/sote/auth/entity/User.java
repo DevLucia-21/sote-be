@@ -63,6 +63,10 @@ public class User {
     @Column(name = "notification_type")
     private Set<NotificationType> enabledNotifications = new HashSet<>();
 
+    @Lob
+    @Column(name = "profile_image")
+    private byte[] profileImage;
+
     // 기본 생성자
     public User() {}
 
@@ -115,6 +119,10 @@ public class User {
         return enabledNotifications;
     }
 
+    public byte[] getProfileImage() {
+        return profileImage;
+    }
+
     // Setters
     public void setEmail(String email) {
         this.email = email;
@@ -158,5 +166,9 @@ public class User {
 
     public void setEnabledNotifications(Set<NotificationType> enabledNotifications) {
         this.enabledNotifications = enabledNotifications;
+    }
+
+    public void setProfileImage(byte[] profileImage) {
+        this.profileImage = profileImage;
     }
 }

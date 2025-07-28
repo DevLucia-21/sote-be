@@ -13,7 +13,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -141,6 +143,19 @@ public class UserServiceImpl implements UserService {
         return UUID.randomUUID().toString().substring(0, 8);
     }
 
+    @Override
+    @Transactional
+    public void updateProfileImage(MultipartFile image) {
+        User user = getCurrentUser();
+        try {
+            byte[] imageBytes = image.getBytes();
+            user.setProfileImage(imageBytes);
+            userRepo.save(user);
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 업로드 중 오류 발생", e);
+        }
+    }
+
     private void sendTemporaryPasswordEmail(String to, String temp) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
@@ -152,5 +167,13 @@ public class UserServiceImpl implements UserService {
                         "\n\n로그인 후 반드시 비밀번호를 변경해 주세요.\n\n감사합니다."
         );
         mailSender.send(message);
+    }
+
+    @Override
+    @Transactional
+    public void deleteProfileImage() {
+        User user = getCurrentUser();
+        user.setProfileImage(null);
+        userRepo.save(user);
     }
 }

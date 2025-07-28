@@ -8,11 +8,13 @@ import com.fluxion.sote.user.dto.*;
 import com.fluxion.sote.user.service.KeywordService;
 import com.fluxion.sote.user.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.fluxion.sote.user.dto.UserProfileResponse;
 import com.fluxion.sote.user.dto.UserProfileUpdateRequest;
 import com.fluxion.sote.user.dto.KeywordResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -111,5 +113,15 @@ public class UserController {
     @PutMapping("/settings")
     public void updateMySettings(@RequestBody UserSettingsRequest request) {
         userService.updateUserSettings(request);
+    }
+
+    @PutMapping(value = "/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public void updateProfileImage(@RequestPart MultipartFile image) {
+        userService.updateProfileImage(image);
+    }
+
+    @DeleteMapping("/profile/image")
+    public void deleteProfileImage() {
+        userService.deleteProfileImage();
     }
 }
