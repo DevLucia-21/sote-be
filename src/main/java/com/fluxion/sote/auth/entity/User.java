@@ -1,8 +1,12 @@
 package com.fluxion.sote.auth.entity;
 
+import com.fluxion.sote.notification.entity.FcmToken;
+import com.fluxion.sote.notification.enums.NotificationType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import lombok.Getter;
@@ -50,6 +54,25 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "character", nullable = false, length = 20)
+    private String character = "piano";
+
+    @Column(name = "profile_image_url", length = 255)
+    private String profileImageUrl;
+
+    @ElementCollection(targetClass = NotificationType.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_notifications", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "notification_type")
+    private Set<NotificationType> enabledNotifications = new HashSet<>();
+
+    @Lob
+    @Column(name = "profile_image")
+    private byte[] profileImage;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FcmToken> fcmTokens = new ArrayList<>();
+
     // 기본 생성자
     public User() {}
 
@@ -90,6 +113,26 @@ public class User {
         return createdAt;
     }
 
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public String getCharacter() {
+        return character;
+    }
+
+    public Set<NotificationType> getEnabledNotifications() {
+        return enabledNotifications;
+    }
+
+    public byte[] getProfileImage() {
+        return profileImage;
+    }
+
+    public List<FcmToken> getFcmTokens() {
+        return fcmTokens;
+    }
+
     // Setters
     public void setEmail(String email) {
         this.email = email;
@@ -121,5 +164,43 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    public void setCharacter(String character) {
+        this.character = character;
+    }
+
+    public void setEnabledNotifications(Set<NotificationType> enabledNotifications) {
+        this.enabledNotifications = enabledNotifications;
+    }
+
+    public void setProfileImage(byte[] profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    public void setFcmTokens(List<FcmToken> fcmTokens) {
+        this.fcmTokens = fcmTokens;
+    }
+
+    // 편의 메서드
+
+    // 중복 방지 토큰 추가
+    public void addFcmToken(FcmToken token) {
+        boolean exists = fcmTokens.stream()
+                .anyMatch(t -> t.getToken().equals(token.getToken()));
+        if (!exists) {
+            fcmTokens.add(token);
+            token.setUser(this);
+        }
+    }
+
+    // 토큰 제거
+    public void removeFcmToken(FcmToken token) {
+        fcmTokens.remove(token);
+        token.setUser(null);
     }
 }

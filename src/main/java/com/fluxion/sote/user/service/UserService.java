@@ -1,9 +1,7 @@
 package com.fluxion.sote.user.service;
 
-import com.fluxion.sote.user.dto.FindEmailRequest;
-import com.fluxion.sote.user.dto.FindEmailResponse;
-import com.fluxion.sote.user.dto.FindPwdRequest;
-import com.fluxion.sote.user.dto.FindPwdResponse;
+import com.fluxion.sote.user.dto.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 사용자 계정 복구 및 프로필 관련 비즈니스 로직을 정의하는 인터페이스입니다.
@@ -43,4 +41,20 @@ public interface UserService {
      * @return 일치하면 true, 아니면 false
      */
     boolean checkSecurity(Long userId, Integer questionId, String answer);
+
+    /**
+     * 로그인한 사용자의 프로필 정보를 조회합니다.
+     * @return 닉네임, 프로필 이미지, 기록 수, 저장 이미지 등을 포함한 DTO
+     */
+    UserProfileResponse getMyProfile();
+
+    /**
+     * 로그인한 사용자의 프로필을 수정합니다.
+     * @param request 닉네임, 프로필 이미지 등 수정 정보
+     */
+    void updateMyProfile(UserProfileUpdateRequest request);
+
+    void updateProfileImage(MultipartFile image);
+
+    void deleteProfileImage();
 }
