@@ -3,7 +3,6 @@ plugins {
 	id 'org.springframework.boot' version '3.5.3'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id "org.flywaydb.flyway" version "9.8.1"/*+*/
-
 }
 
 group = 'com.fluxion'
@@ -55,6 +54,6 @@ flyway {
 	url      = 'jdbc:postgresql://localhost:5432/sote_db'
 	user     = 'sote_user'
 	password = 'net123'
+	locations = ['classpath:db/migration']
 	cleanDisabled = false
-
 }
