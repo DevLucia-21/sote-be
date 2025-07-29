@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   security_answer     VARCHAR(100) NOT NULL DEFAULT '',
   music_preferences   TEXT[]       NOT NULL,
   created_at          TIMESTAMP    NOT NULL DEFAULT now(),
+  profile_image       bytea,
   profile_image_url   VARCHAR(255),
   character           VARCHAR(20)  NOT NULL DEFAULT 'piano'
 );
