@@ -42,4 +42,11 @@ public class UserController {
         boolean ok = userService.checkSecurity(req.getUserId(), req.getQuestionId(), req.getAnswer());
         return ResponseEntity.ok(new SecurityCheckResponse(ok));
     }
+
+    @PutMapping("/password")
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequest req) {
+        userService.changePassword(req);
+        return ResponseEntity.noContent().build();
+    }
 }

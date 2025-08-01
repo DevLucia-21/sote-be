@@ -42,6 +42,8 @@ public interface UserService {
      */
     boolean checkSecurity(Long userId, Integer questionId, String answer);
 
+    void changePassword(ChangePasswordRequest request);
+
     /**
      * 현재 인증된 사용자를 영구 삭제합니다.
      */

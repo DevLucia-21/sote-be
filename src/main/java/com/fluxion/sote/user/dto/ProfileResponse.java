@@ -5,6 +5,7 @@ import java.util.Set;
 
 public class ProfileResponse {
 
+    private String email;
     private String nickname;
     private String character;
     private String profileImageUrl;
@@ -15,7 +16,8 @@ public class ProfileResponse {
     public ProfileResponse() {
     }
 
-    public ProfileResponse(String nickname, String character, String profileImageUrl, int totalDiaryCount, List<String> savedImageUrls, Set<Integer> musicPreferenceIds ) {
+    public ProfileResponse(String email, String nickname, String character, String profileImageUrl, int totalDiaryCount, List<String> savedImageUrls, Set<Integer> musicPreferenceIds ) {
+        this.email = email;
         this.nickname = nickname;
         this.character = character;
         this.profileImageUrl = profileImageUrl;
@@ -23,6 +25,8 @@ public class ProfileResponse {
         this.savedImageUrls = savedImageUrls;
         this.musicPreferenceIds = musicPreferenceIds;
     }
+
+    public String getEmail() { return email; }
 
     public String getNickname() {
         return nickname;

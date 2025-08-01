@@ -39,6 +39,7 @@ public class ProfileServiceImpl implements ProfileService {
                 .collect(Collectors.toSet());
 
         return new ProfileResponse(
+                user.getEmail(),
                 user.getNickname(),
                 user.getCharacter(),
                 user.getProfileImageUrl(),
