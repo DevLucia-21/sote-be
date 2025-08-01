@@ -57,6 +57,9 @@ public class User {
     @Column(name = "character", nullable = false, length = 20)
     private String character = "piano";
 
+    @Column(name = "profile_image", columnDefinition = "bytea")
+    private byte[] profileImage;
+
     @Column(name = "profile_image_url", length = 255)
     private String profileImageUrl;
 
@@ -65,9 +68,6 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(name = "notification_type")
     private Set<NotificationType> enabledNotifications = new HashSet<>();
-
-    @Column(name = "profile_image", columnDefinition = "bytea")
-    private byte[] profileImage;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FcmToken> fcmTokens = new ArrayList<>();

@@ -4,7 +4,6 @@ import com.fluxion.sote.auth.dto.SecurityCheckRequest;
 import com.fluxion.sote.auth.dto.SecurityCheckResponse;
 import com.fluxion.sote.global.util.ResponseUtil;
 import com.fluxion.sote.user.dto.*;
-import com.fluxion.sote.user.service.KeywordService;
 import com.fluxion.sote.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
@@ -12,18 +11,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
-    private final KeywordService keywordService;
 
-    public UserController(UserService userService, KeywordService keywordService) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.keywordService = keywordService;
     }
 
     @PostMapping("/find-email")
@@ -50,38 +45,26 @@ public class UserController {
         return ResponseEntity.ok(new SecurityCheckResponse(ok));
     }
 
-    @GetMapping("/users/me")
+    @GetMapping("/me")
     public UserProfileResponse getMyProfile() {
         return userService.getMyProfile();
     }
 
-    @PutMapping("/users/me")
+    @PutMapping("/me")
     public void updateMyProfile(@RequestBody UserProfileUpdateRequest request) {
         userService.updateMyProfile(request);
     }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteCurrentUser() {userService.deleteCurrentUser(); return ResponseEntity.noContent().build();}
 
     @PutMapping(value = "/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public void updateProfileImage(@RequestPart MultipartFile image) {
         userService.updateProfileImage(image);
     }
 
-    @DeleteMapping("/profile/image")
+    @DeleteMapping("/me/profile-image")
     public void deleteProfileImage() {
         userService.deleteProfileImage();
-    }
-
-    @GetMapping("/keywords")
-    public List<KeywordResponse> getKeywords() {
-        return keywordService.getKeywords();
-    }
-
-    @PostMapping("/keywords")
-    public void addKeyword(@RequestBody String content) {
-        keywordService.addKeyword(content);
-    }
-
-    @DeleteMapping("/keywords/{id}")
-    public void deleteKeyword(@PathVariable Long id) {
-        keywordService.deleteKeyword(id);
     }
 }
