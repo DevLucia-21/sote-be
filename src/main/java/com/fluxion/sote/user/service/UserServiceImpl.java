@@ -7,10 +7,7 @@ import com.fluxion.sote.auth.repository.UserSecurityAnswerRepository;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.SecurityUtil;
 import com.fluxion.sote.setting.repository.NotificationSettingRepository;
-import com.fluxion.sote.user.dto.FindEmailRequest;
-import com.fluxion.sote.user.dto.FindEmailResponse;
-import com.fluxion.sote.user.dto.FindPwdRequest;
-import com.fluxion.sote.user.dto.FindPwdResponse;
+import com.fluxion.sote.user.dto.*;
 import com.fluxion.sote.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
@@ -20,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+
+import static com.fluxion.sote.global.util.SecurityUtil.getCurrentUser;
 
 @Service
 @RequiredArgsConstructor
@@ -98,8 +97,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public void changePassword(ChangePasswordRequest req) {
+        User user = getCurrentUser();
+        if (!passwordEncoder.matches(req.getOldPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("현재 비밀번호가 틀립니다.");
+        }
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        userRepo.save(user);
+    }
+
+    @Override
+    @Transactional
     public void deleteCurrentUser() {
-        User user = SecurityUtil.getCurrentUser();
+        User user = getCurrentUser();
 
         securityAnswerRepo.deleteByUserId(user.getId());
         notificationSettingRepo.deleteByUser(user);
