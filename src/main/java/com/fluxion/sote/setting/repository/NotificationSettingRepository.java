@@ -1,6 +1,6 @@
-package com.fluxion.sote.notification.repository;
+package com.fluxion.sote.setting.repository;
 
-import com.fluxion.sote.notification.entity.NotificationSetting;
+import com.fluxion.sote.setting.entity.NotificationSetting;
 import com.fluxion.sote.auth.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

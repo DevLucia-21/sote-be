@@ -6,10 +6,8 @@ import com.fluxion.sote.global.util.ResponseUtil;
 import com.fluxion.sote.user.dto.*;
 import com.fluxion.sote.user.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/users")
@@ -43,28 +41,5 @@ public class UserController {
     public ResponseEntity<SecurityCheckResponse> checkSecurity(@RequestBody SecurityCheckRequest req) {
         boolean ok = userService.checkSecurity(req.getUserId(), req.getQuestionId(), req.getAnswer());
         return ResponseEntity.ok(new SecurityCheckResponse(ok));
-    }
-
-    @GetMapping("/me")
-    public UserProfileResponse getMyProfile() {
-        return userService.getMyProfile();
-    }
-
-    @PutMapping("/me")
-    public void updateMyProfile(@RequestBody UserProfileUpdateRequest request) {
-        userService.updateMyProfile(request);
-    }
-
-    @DeleteMapping("/me")
-    public ResponseEntity<Void> deleteCurrentUser() {userService.deleteCurrentUser(); return ResponseEntity.noContent().build();}
-
-    @PutMapping(value = "/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public void updateProfileImage(@RequestPart MultipartFile image) {
-        userService.updateProfileImage(image);
-    }
-
-    @DeleteMapping("/me/profile-image")
-    public void deleteProfileImage() {
-        userService.deleteProfileImage();
     }
 }

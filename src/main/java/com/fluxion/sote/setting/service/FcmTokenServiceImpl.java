@@ -1,10 +1,10 @@
-package com.fluxion.sote.notification.service;
+package com.fluxion.sote.setting.service;
 
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.SecurityUtil;
-import com.fluxion.sote.notification.entity.FcmToken;
-import com.fluxion.sote.notification.repository.FcmTokenRepository;
+import com.fluxion.sote.setting.entity.FcmToken;
+import com.fluxion.sote.setting.repository.FcmTokenRepository;
 import com.fluxion.sote.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

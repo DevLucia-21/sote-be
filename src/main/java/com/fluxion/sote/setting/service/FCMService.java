@@ -1,7 +1,7 @@
-package com.fluxion.sote.notification.service;
+package com.fluxion.sote.setting.service;
 
 import com.fluxion.sote.auth.entity.User;
-import com.fluxion.sote.notification.entity.FcmToken;
+import com.fluxion.sote.setting.entity.FcmToken;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;

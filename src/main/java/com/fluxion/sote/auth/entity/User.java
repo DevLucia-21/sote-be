@@ -1,7 +1,7 @@
 package com.fluxion.sote.auth.entity;
 
-import com.fluxion.sote.notification.entity.FcmToken;
-import com.fluxion.sote.notification.enums.NotificationType;
+import com.fluxion.sote.setting.entity.FcmToken;
+import com.fluxion.sote.setting.enums.NotificationType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
@@ -63,6 +63,9 @@ public class User {
     @Column(name = "profile_image_url", length = 255)
     private String profileImageUrl;
 
+    @Column(name = "dark_mode", nullable = false)
+    private boolean darkMode = false;
+
     @ElementCollection(targetClass = NotificationType.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "user_notifications", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
@@ -71,121 +74,6 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FcmToken> fcmTokens = new ArrayList<>();
-
-    // 기본 생성자
-    public User() {}
-
-    // Getters
-    public Long getId() {
-        return id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public String getNickname() {
-        return nickname;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public LocalDate getBirthDate() {
-        return birthDate;
-    }
-
-    public String getSecurityAnswer() {
-        return securityAnswer;
-    }
-
-    public Set<Genre> getMusicPreferences() {
-        return musicPreferences;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public String getProfileImageUrl() {
-        return profileImageUrl;
-    }
-
-    public String getCharacter() {
-        return character;
-    }
-
-    public Set<NotificationType> getEnabledNotifications() {
-        return enabledNotifications;
-    }
-
-    public byte[] getProfileImage() {
-        return profileImage;
-    }
-
-    public List<FcmToken> getFcmTokens() {
-        return fcmTokens;
-    }
-
-    // Setters
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public void setBirthDate(LocalDate birthDate) {
-        this.birthDate = birthDate;
-    }
-
-    public void setSecurityAnswer(String securityAnswer) {
-        this.securityAnswer = securityAnswer;
-    }
-
-    public void setMusicPreferences(Set<Genre> musicPreferences) {
-        this.musicPreferences = musicPreferences;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setProfileImageUrl(String profileImageUrl) {
-        this.profileImageUrl = profileImageUrl;
-    }
-
-    public void setCharacter(String character) {
-        this.character = character;
-    }
-
-    public void setEnabledNotifications(Set<NotificationType> enabledNotifications) {
-        this.enabledNotifications = enabledNotifications;
-    }
-
-    public void setProfileImage(byte[] profileImage) {
-        this.profileImage = profileImage;
-    }
-
-    public void setFcmTokens(List<FcmToken> fcmTokens) {
-        this.fcmTokens = fcmTokens;
-    }
-
-    // 편의 메서드
 
     // 중복 방지 토큰 추가
     public void addFcmToken(FcmToken token) {

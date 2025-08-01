@@ -1,17 +1,24 @@
 package com.fluxion.sote.user.dto;
 
-public class UserProfileUpdateRequest {
+import jakarta.validation.constraints.NotNull;
+import java.util.Set;
+
+public class ProfileUpdateRequest {
 
     private String nickname;
     private String character;
     private String profileImageUrl;
+    @NotNull
+    private Set<Integer> genreIds;
 
-    public UserProfileUpdateRequest() {
+    public ProfileUpdateRequest() {
     }
 
-    public UserProfileUpdateRequest(String nickname, String profileImageUrl) {
+    public ProfileUpdateRequest(String nickname, String character, String profileImageUrl,Set<Integer> genreIds) {
         this.nickname = nickname;
+        this.character = character;
         this.profileImageUrl = profileImageUrl;
+        this.genreIds = genreIds;
     }
 
     public String getNickname() {
@@ -37,4 +44,8 @@ public class UserProfileUpdateRequest {
     public void setProfileImageUrl(String profileImageUrl) {
         this.profileImageUrl = profileImageUrl;
     }
+
+    public Set<Integer> getGenreIds() { return genreIds; }
+
+    public void setGenreIds(Set<Integer> genreIds) { this.genreIds = genreIds; }
 }

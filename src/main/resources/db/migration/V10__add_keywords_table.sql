@@ -1,4 +1,4 @@
--- src/main/resources/db/migration/V10__create_keywords_table.sql
+-- V10__add_keywords_table.sql
 
 CREATE TABLE IF NOT EXISTS public.keywords (
   id         BIGSERIAL PRIMARY KEY,

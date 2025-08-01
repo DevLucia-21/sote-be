@@ -1,4 +1,4 @@
-package com.fluxion.sote.notification.service;
+package com.fluxion.sote.setting.service;
 
 public interface FcmTokenService {
 
