@@ -43,23 +43,7 @@ public interface UserService {
     boolean checkSecurity(Long userId, Integer questionId, String answer);
 
     /**
-     * 로그인한 사용자의 프로필 정보를 조회합니다.
-     * @return 닉네임, 프로필 이미지, 기록 수, 저장 이미지 등을 포함한 DTO
-     */
-    UserProfileResponse getMyProfile();
-
-    /**
      * 현재 인증된 사용자를 영구 삭제합니다.
      */
     void deleteCurrentUser();
-
-    /**
-     * 로그인한 사용자의 프로필을 수정합니다.
-     * @param request 닉네임, 프로필 이미지 등 수정 정보
-     */
-    void updateMyProfile(UserProfileUpdateRequest request);
-
-    void updateProfileImage(MultipartFile image);
-
-    void deleteProfileImage();
 }
