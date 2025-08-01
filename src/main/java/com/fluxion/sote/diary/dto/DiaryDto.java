@@ -1,4 +1,9 @@
 package com.fluxion.sote.diary.dto;
 
-public class DiaryDto {
-}
+import java.time.LocalDate;
+
+public record DiaryDto(
+        Long id,
+        LocalDate date,
+        String content
+) {}

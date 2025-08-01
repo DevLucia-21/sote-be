@@ -66,8 +66,7 @@ public class User {
     @Column(name = "notification_type")
     private Set<NotificationType> enabledNotifications = new HashSet<>();
 
-    @Lob
-    @Column(name = "profile_image")
+    @Column(name = "profile_image", columnDefinition = "bytea")
     private byte[] profileImage;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
