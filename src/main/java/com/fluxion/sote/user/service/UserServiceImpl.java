@@ -5,6 +5,7 @@ import com.fluxion.sote.auth.repository.UserSecurityAnswerRepository;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.SecurityUtil;
+import com.fluxion.sote.notification.repository.NotificationSettingRepository;
 import com.fluxion.sote.user.dto.*;
 import com.fluxion.sote.user.repository.UserRepository;
 import org.springframework.mail.SimpleMailMessage;
@@ -22,17 +23,20 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserSecurityAnswerRepository userSecurityAnswerRepository;
+    private final NotificationSettingRepository notificationSettingRepository;
     private final UserRepository userRepo;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
 
     public UserServiceImpl(
             UserSecurityAnswerRepository userSecurityAnswerRepository,
+            NotificationSettingRepository notificationSettingRepository,
             UserRepository userRepo,
             BCryptPasswordEncoder passwordEncoder,
             JavaMailSender mailSender
     ) {
         this.userSecurityAnswerRepository = userSecurityAnswerRepository;
+        this.notificationSettingRepository = notificationSettingRepository;
         this.userRepo = userRepo;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
@@ -104,6 +108,23 @@ public class UserServiceImpl implements UserService {
                 totalDiaryCount,
                 savedImages
         );
+    }
+
+    @Override
+    @Transactional
+    public void deleteCurrentUser() {
+        User currentUser = SecurityUtil.getCurrentUser();
+
+        // 1) 보안 질문 답변 삭제
+        userSecurityAnswerRepository.deleteByUserId(currentUser.getId());
+
+        // 2) 알림 설정 삭제
+        notificationSettingRepository.deleteByUser(currentUser);
+
+        // 3) (필요시) user_genres 등은 FK ON DELETE CASCADE 로 자동 삭제
+
+        // 4) 최종 사용자 삭제
+        userRepo.deleteById(currentUser.getId());
     }
 
     @Override
