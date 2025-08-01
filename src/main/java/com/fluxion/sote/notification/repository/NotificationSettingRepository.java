@@ -3,6 +3,8 @@ package com.fluxion.sote.notification.repository;
 import com.fluxion.sote.notification.entity.NotificationSetting;
 import com.fluxion.sote.auth.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,5 +18,7 @@ public interface NotificationSettingRepository extends JpaRepository<Notificatio
     /**
      * 특정 사용자의 모든 알림 설정 삭제
      */
+    @Modifying
+    @Transactional
     void deleteByUser(User user);
 }
