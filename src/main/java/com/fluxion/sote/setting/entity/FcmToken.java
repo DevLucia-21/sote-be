@@ -1,4 +1,4 @@
-package com.fluxion.sote.notification.entity;
+package com.fluxion.sote.setting.entity;
 
 import com.fluxion.sote.auth.entity.User;
 import jakarta.persistence.*;
@@ -18,8 +18,8 @@ public class FcmToken {
     @Column(nullable = false)
     private String token;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     // 토큰 설정용 생성자

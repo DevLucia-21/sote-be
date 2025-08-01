@@ -1,14 +1,15 @@
-package com.fluxion.sote.notification.dto;
+package com.fluxion.sote.setting.dto;
 
-import com.fluxion.sote.notification.enums.NotificationType;
-import jakarta.validation.constraints.NotNull;
-
+import com.fluxion.sote.setting.enums.NotificationType;
 import java.util.Set;
 
-public class NotificationSettingRequest {
+public class NotificationSettingResponse {
 
-    @NotNull
     private Set<NotificationType> enabledNotifications;
+
+    public NotificationSettingResponse(Set<NotificationType> enabledNotifications) {
+        this.enabledNotifications = enabledNotifications;
+    }
 
     public Set<NotificationType> getEnabledNotifications() {
         return enabledNotifications;

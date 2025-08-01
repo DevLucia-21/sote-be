@@ -5,7 +5,7 @@ import com.fluxion.sote.auth.repository.UserSecurityAnswerRepository;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.SecurityUtil;
-import com.fluxion.sote.notification.repository.NotificationSettingRepository;
+import com.fluxion.sote.setting.repository.NotificationSettingRepository;
 import com.fluxion.sote.user.dto.*;
 import com.fluxion.sote.user.repository.UserRepository;
 import org.springframework.mail.SimpleMailMessage;

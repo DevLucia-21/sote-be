@@ -1,6 +1,6 @@
-package com.fluxion.sote.notification.repository;
+package com.fluxion.sote.setting.repository;
 
-import com.fluxion.sote.notification.entity.FcmToken;
+import com.fluxion.sote.setting.entity.FcmToken;
 import com.fluxion.sote.auth.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 

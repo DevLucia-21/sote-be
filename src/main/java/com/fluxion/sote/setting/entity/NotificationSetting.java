@@ -1,6 +1,6 @@
-package com.fluxion.sote.notification.entity;
+package com.fluxion.sote.setting.entity;
 
-import com.fluxion.sote.notification.enums.NotificationType;
+import com.fluxion.sote.setting.enums.NotificationType;
 import com.fluxion.sote.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
