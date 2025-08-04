@@ -1,6 +1,6 @@
 package com.fluxion.sote.auth.dto;
 
-public class SecurityAnswerDto {
+public class SecurityAnswer {
     private Integer questionId;
     private String answer;
 

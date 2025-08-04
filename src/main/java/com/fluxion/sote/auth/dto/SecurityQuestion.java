@@ -1,13 +1,13 @@
 // src/main/java/com/fluxion/sote/auth/dto/SecurityQuestionDto.java
 package com.fluxion.sote.auth.dto;
 
-public class SecurityQuestionDto {
+public class SecurityQuestion {
     private Integer id;
     private String questionText;
 
-    public SecurityQuestionDto() { }
+    public SecurityQuestion() { }
 
-    public SecurityQuestionDto(Integer id, String questionText) {
+    public SecurityQuestion(Integer id, String questionText) {
         this.id = id;
         this.questionText = questionText;
     }

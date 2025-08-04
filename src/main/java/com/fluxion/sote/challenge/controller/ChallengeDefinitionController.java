@@ -1,7 +1,7 @@
 package com.fluxion.sote.challenge.controller;
 
-import com.fluxion.sote.challenge.dto.ChallengeDefinitionRequestDto;
-import com.fluxion.sote.challenge.dto.ChallengeDefinitionResponseDto;
+import com.fluxion.sote.challenge.dto.ChallengeDefinitionRequest;
+import com.fluxion.sote.challenge.dto.ChallengeDefinitionResponse;
 import com.fluxion.sote.challenge.service.ChallengeDefinitionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,21 +18,21 @@ public class ChallengeDefinitionController {
 
     // 등록
     @PostMapping
-    public ResponseEntity<Long> create(@RequestBody ChallengeDefinitionRequestDto dto) {
+    public ResponseEntity<Long> create(@RequestBody ChallengeDefinitionRequest dto) {
         Long id = challengeService.create(dto);
         return ResponseEntity.ok(id);
     }
 
     // 전체 조회
     @GetMapping
-    public ResponseEntity<List<ChallengeDefinitionResponseDto>> findAll() {
+    public ResponseEntity<List<ChallengeDefinitionResponse>> findAll() {
         return ResponseEntity.ok(challengeService.findAll());
     }
 
     // 수정
     @PutMapping("/{id}")
     public ResponseEntity<Void> update(@PathVariable Long id,
-                                       @RequestBody ChallengeDefinitionRequestDto dto) {
+                                       @RequestBody ChallengeDefinitionRequest dto) {
         challengeService.update(id, dto);
         return ResponseEntity.ok().build();
     }

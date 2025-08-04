@@ -1,7 +1,7 @@
 // src/main/java/com/fluxion/sote/auth/service/SecurityQuestionServiceImpl.java
 package com.fluxion.sote.auth.service;
 
-import com.fluxion.sote.auth.dto.SecurityQuestionDto;
+import com.fluxion.sote.auth.dto.SecurityQuestion;
 import com.fluxion.sote.auth.repository.SecurityQuestionRepository;
 import org.springframework.stereotype.Service;
 
@@ -18,9 +18,9 @@ public class SecurityQuestionServiceImpl implements SecurityQuestionService {
     }
 
     @Override
-    public List<SecurityQuestionDto> findAll() {
+    public List<SecurityQuestion> findAll() {
         return repo.findAll().stream()
-                .map(q -> new SecurityQuestionDto(
+                .map(q -> new SecurityQuestion(
                         q.getId(),
                         q.getQuestionText()
                 ))

@@ -3,14 +3,11 @@ package com.fluxion.sote.challenge.dto;
 import com.fluxion.sote.challenge.enums.EmotionType;
 import lombok.Builder;
 
-import java.time.LocalDate;
-
-public record ChallengeBadgeResponseDto(
-        Long challengeId,
+public record ChallengeDefinitionRequest(
         String content,
         EmotionType emotionType,
-        LocalDate completedDate
+        String category
 ) {
     @Builder
-    public ChallengeBadgeResponseDto {}
+    public ChallengeDefinitionRequest {}
 }
