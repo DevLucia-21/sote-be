@@ -37,12 +37,13 @@ public class DiaryServiceImpl implements DiaryService {
 
     @Override
     @Transactional
-    public DiaryDto update(User user, LocalDate date, String newContent) {
+    public DiaryDto update(User user, LocalDate date, String content) {
         Diary diary = diaryRepo.findByUserAndDate(user, date)
-                .orElseThrow(() -> new IllegalArgumentException("일기가 없습니다."));
-        diary.setContent(newContent);
+                .orElseThrow(() -> new IllegalArgumentException("해당 날짜의 일기가 존재하지 않습니다."));
+        diary.setContent(content);
         return new DiaryDto(diary.getId(), diary.getDate(), diary.getContent());
     }
+
 
     @Override
     @Transactional
