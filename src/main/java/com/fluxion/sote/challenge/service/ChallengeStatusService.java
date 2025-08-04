@@ -1,8 +1,7 @@
 package com.fluxion.sote.challenge.service;
 
 import com.fluxion.sote.auth.entity.User;
-import com.fluxion.sote.challenge.dto.TodayChallengeStatusDto;
-import com.fluxion.sote.challenge.entity.UserChallenge;
+import com.fluxion.sote.challenge.dto.TodayChallengeStatus;
 import com.fluxion.sote.challenge.repository.UserChallengeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,16 +14,16 @@ public class ChallengeStatusService {
 
     private final UserChallengeRepository userChallengeRepo;
 
-    public TodayChallengeStatusDto getTodayStatus(User user) {
+    public TodayChallengeStatus getTodayStatus(User user) {
         return userChallengeRepo.findByUserAndDate(user, LocalDate.now())
-                .map(ch -> TodayChallengeStatusDto.builder()
+                .map(ch -> TodayChallengeStatus.builder()
                         .isRecommended(true)
                         .isCompleted(ch.isCompleted())
                         .challengeId(ch.getChallenge().getId())
                         .content(ch.getChallenge().getContent())
                         .emotionType(ch.getChallenge().getEmotionType())
                         .build())
-                .orElse(TodayChallengeStatusDto.builder()
+                .orElse(TodayChallengeStatus.builder()
                         .isRecommended(false)
                         .isCompleted(false)
                         .build());

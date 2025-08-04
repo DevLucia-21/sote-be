@@ -3,7 +3,7 @@ package com.fluxion.sote.challenge.dto;
 import com.fluxion.sote.challenge.enums.EmotionType;
 import lombok.Builder;
 
-public record TodayChallengeStatusDto(
+public record TodayChallengeStatus(
         boolean isRecommended,
         boolean isCompleted,
         Long challengeId,
@@ -11,5 +11,5 @@ public record TodayChallengeStatusDto(
         EmotionType emotionType
 ) {
     @Builder
-    public TodayChallengeStatusDto {}
+    public TodayChallengeStatus {}
 }

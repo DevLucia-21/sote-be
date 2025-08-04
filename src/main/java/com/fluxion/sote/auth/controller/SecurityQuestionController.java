@@ -1,7 +1,7 @@
 // src/main/java/com/fluxion/sote/auth/controller/SecurityQuestionController.java
 package com.fluxion.sote.auth.controller;
 
-import com.fluxion.sote.auth.dto.SecurityQuestionDto;
+import com.fluxion.sote.auth.dto.SecurityQuestion;
 import com.fluxion.sote.auth.service.SecurityQuestionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +19,8 @@ public class SecurityQuestionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<SecurityQuestionDto>> getAllSecurityQuestions() {
-        List<SecurityQuestionDto> questions = securityQuestionService.findAll();
+    public ResponseEntity<List<SecurityQuestion>> getAllSecurityQuestions() {
+        List<SecurityQuestion> questions = securityQuestionService.findAll();
         return ResponseEntity.ok(questions);
     }
 }

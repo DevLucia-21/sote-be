@@ -1,7 +1,7 @@
 package com.fluxion.sote.challenge.controller;
 
 import com.fluxion.sote.auth.entity.User;
-import com.fluxion.sote.challenge.dto.ChallengeDefinitionResponseDto;
+import com.fluxion.sote.challenge.dto.ChallengeDefinitionResponse;
 import com.fluxion.sote.challenge.enums.EmotionType;
 import com.fluxion.sote.challenge.service.ChallengeRecommendService;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +17,13 @@ public class ChallengeRecommendController {
 
     // 오늘의 챌린지 추천
     @GetMapping("/today")
-    public ResponseEntity<ChallengeDefinitionResponseDto> getTodayChallenge(
+    public ResponseEntity<ChallengeDefinitionResponse> getTodayChallenge(
             @RequestParam EmotionType emotion,
             @RequestAttribute("user") User user
     ) {
         var challenge = recommendService.recommendTodayChallenge(user, emotion);
 
-        return ResponseEntity.ok(ChallengeDefinitionResponseDto.builder()
+        return ResponseEntity.ok(ChallengeDefinitionResponse.builder()
                 .id(challenge.getId())
                 .content(challenge.getContent())
                 .emotionType(challenge.getEmotionType())
