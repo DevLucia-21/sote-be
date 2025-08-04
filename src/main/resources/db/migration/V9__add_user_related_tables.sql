@@ -47,9 +47,11 @@ CREATE TABLE IF NOT EXISTS public.user_keywords (
 -- 5) FCM tokens
 CREATE TABLE IF NOT EXISTS public.fcm_tokens (
   id             BIGSERIAL PRIMARY KEY,
-  user_id        BIGINT    NOT NULL,
+  user_id        BIGINT       NOT NULL,
   token          VARCHAR(255) NOT NULL,
-  registered_at  TIMESTAMP NOT NULL DEFAULT now(),
+  registered_at  TIMESTAMP    NOT NULL DEFAULT now(),
   CONSTRAINT fk_fcm_user
-    FOREIGN KEY(user_id) REFERENCES public.users(id) ON DELETE CASCADE
+    FOREIGN KEY(user_id) REFERENCES public.users(id) ON DELETE CASCADE,
+  CONSTRAINT uq_user_token UNIQUE(user_id, token)
 );
+

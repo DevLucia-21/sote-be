@@ -50,8 +50,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/diaries").authenticated()
-                        .requestMatchers("/api/auth/**", "/api/users/**", "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/genres", "/api/security-questions").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/users/**", "/api/settings/**", "/health").permitAll()
                         .anyRequest().authenticated()
                 )
 

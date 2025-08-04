@@ -1,7 +1,7 @@
 package com.fluxion.sote.challenge.service;
 
-import com.fluxion.sote.challenge.dto.ChallengeDefinitionRequestDto;
-import com.fluxion.sote.challenge.dto.ChallengeDefinitionResponseDto;
+import com.fluxion.sote.challenge.dto.ChallengeDefinitionRequest;
+import com.fluxion.sote.challenge.dto.ChallengeDefinitionResponse;
 import com.fluxion.sote.challenge.entity.ChallengeDefinition;
 import com.fluxion.sote.challenge.repository.ChallengeDefinitionRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class ChallengeDefinitionService {
 
     // 챌린지 등록
     @Transactional
-    public Long create(ChallengeDefinitionRequestDto dto) {
+    public Long create(ChallengeDefinitionRequest dto) {
         ChallengeDefinition challenge = ChallengeDefinition.builder()
                 .content(dto.content())
                 .emotionType(dto.emotionType())
@@ -32,7 +32,7 @@ public class ChallengeDefinitionService {
 
     // 챌린지 수정
     @Transactional
-    public void update(Long id, ChallengeDefinitionRequestDto dto) {
+    public void update(Long id, ChallengeDefinitionRequest dto) {
         ChallengeDefinition challenge = challengeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 챌린지입니다."));
 
@@ -49,10 +49,10 @@ public class ChallengeDefinitionService {
     }
 
     // 전체 조회
-    public List<ChallengeDefinitionResponseDto> findAll() {
+    public List<ChallengeDefinitionResponse> findAll() {
         return challengeRepository.findAll().stream()
                 .filter(c -> !c.isDeleted())
-                .map(c -> ChallengeDefinitionResponseDto.builder()
+                .map(c -> ChallengeDefinitionResponse.builder()
                         .id(c.getId())
                         .content(c.getContent())
                         .emotionType(c.getEmotionType())

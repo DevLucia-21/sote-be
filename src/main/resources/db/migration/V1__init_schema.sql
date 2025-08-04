@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   birth_date          DATE         NOT NULL,
   security_answer     VARCHAR(100) NOT NULL DEFAULT '',
   music_preferences   TEXT[]       NOT NULL,
+  dark_mode           BOOLEAN      NOT NULL DEFAULT false,
   created_at          TIMESTAMP    NOT NULL DEFAULT now(),
   profile_image       bytea,
   profile_image_url   VARCHAR(255),
