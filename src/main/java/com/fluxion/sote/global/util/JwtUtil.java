@@ -113,6 +113,7 @@ public class JwtUtil {
      */
     public String getRole(String token) {
         return parseClaims(token).get("role", String.class);
+
     }
 
     /**
