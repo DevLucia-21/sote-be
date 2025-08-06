@@ -28,7 +28,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 // CORS 처리: WebConfig에 등록된 CorsFilter 사용
-                .cors(Customizer.withDefaults())   // ← 이걸로 변경
+                .cors(Customizer.withDefaults())
 
                 // CSRF 비활성화
                 .csrf(csrf -> csrf.disable())
@@ -41,12 +41,13 @@ public class SecurityConfig {
                 // 인가 규칙
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/users/**", "/api/settings/**", "/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/genres", "/api/security-questions").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/diaries").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/genres", "/api/security-questions").permitAll()
-                        .requestMatchers("/api/auth/**", "/api/users/**", "/api/settings/**", "/health").permitAll()
                         .anyRequest().authenticated()
                 )
 
