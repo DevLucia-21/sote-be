@@ -4,6 +4,7 @@ import com.fluxion.sote.global.config.JwtFilter;
 import com.fluxion.sote.global.util.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,20 +27,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                // CORS 설정
-                .cors(cors -> cors.configurationSource(request -> {
-                    CorsConfiguration cfg = new CorsConfiguration();
-                    cfg.setAllowedOrigins(List.of("http://localhost:3000"));
-                    cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    cfg.setAllowedHeaders(List.of("*"));
-                    cfg.setAllowCredentials(true);
-                    return cfg;
-                }))
+                // CORS 처리: WebConfig에 등록된 CorsFilter 사용
+                .cors(Customizer.withDefaults())   // ← 이걸로 변경
 
                 // CSRF 비활성화
                 .csrf(csrf -> csrf.disable())
 
-                // 세션 없이 JWT Stateless
+                // JWT Stateless 세션 정책
                 .sessionManagement(sm ->
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
