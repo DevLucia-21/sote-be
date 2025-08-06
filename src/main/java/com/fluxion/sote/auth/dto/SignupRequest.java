@@ -15,5 +15,7 @@ public record SignupRequest(
         @NotBlank @Size(max = 10) @NoProfanity String nickname,
         @NotNull @PastOrPresent LocalDate birthDate,
         @NotEmpty List<@NotNull Integer> musicPreferences,
-        @NotBlank String securityAnswer
+        @NotBlank String securityAnswer,
+        @NotNull Integer securityQuestionId,
+        @NotBlank String character
 ) {}

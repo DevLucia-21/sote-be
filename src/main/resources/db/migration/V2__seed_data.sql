@@ -16,7 +16,6 @@ INSERT INTO public.users (
   role,
   birth_date,
   security_answer,      -- 추가
-  music_preferences,
   character
 )
 VALUES (
@@ -27,7 +26,6 @@ VALUES (
   'ROLE_USER',
   '1990-01-01',
   'defaultAnswer',      -- 보안 질문 기본 답변
-  ARRAY['rock','pop','jazz'],
   'piano'
 )
 ON CONFLICT (email) DO NOTHING;
