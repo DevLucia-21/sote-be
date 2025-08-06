@@ -1,5 +1,6 @@
 package com.fluxion.sote.global.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,10 +29,11 @@ public class WebConfig {
     }
 
     @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(CorsConfigurationSource source) {
-        CorsFilter corsFilter = new CorsFilter(source);
-        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(corsFilter);
-        // SecurityFilterChain 보다 먼저 실행
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(
+            @Qualifier("corsConfigurationSource") CorsConfigurationSource source
+    ) {
+        CorsFilter filter = new CorsFilter(source);
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(filter);
         bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
         return bean;
     }
