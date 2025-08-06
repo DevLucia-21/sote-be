@@ -1,11 +1,10 @@
-// src/main/java/com/fluxion/sote/global/config/WebConfig.java
 package com.fluxion.sote.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
@@ -13,16 +12,15 @@ import java.util.List;
 public class WebConfig {
 
     @Bean
-    public CorsFilter corsFilter() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowCredentials(true);
-        // 프론트 도메인 설정 (패턴 사용 가능)
         cfg.setAllowedOriginPatterns(List.of("http://localhost:3000"));
         cfg.addAllowedHeader("*");
         cfg.addAllowedMethod("*");
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", cfg);
-        return new CorsFilter(source);
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/**", cfg);
+        return src;
     }
 }
