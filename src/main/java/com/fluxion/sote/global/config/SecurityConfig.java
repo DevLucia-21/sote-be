@@ -46,6 +46,7 @@ public class SecurityConfig {
 
                 // 인가 규칙
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/diaries").authenticated()
