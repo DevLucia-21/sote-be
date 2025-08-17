@@ -18,10 +18,10 @@ public class QuestionServiceImpl implements QuestionService {
     private final QuestionRepository repo;
 
     private QuestionDto toDto(Question q) {
-        return new QuestionDto(q.getId(), q.getContent());
+        return new QuestionDto(q.getId(), q.getContent(), q.getQuestionDay());
     }
     private Question toEntity(QuestionDto dto) {
-        return new Question(dto.getContent());
+        return new Question(dto.getContent(), dto.getQuestionDay());
     }
 
     @Override
