@@ -4,12 +4,15 @@ package com.fluxion.sote.question.dto;
 public class QuestionDto {
     private Long id;
     private String content;
+    private Integer questionDay;
 
     public QuestionDto() {}
 
-    public QuestionDto(Long id, String content) {
+    public QuestionDto(Long id, String content, Integer questionDay) {
         this.id = id;
         this.content = content;
+        this.questionDay = questionDay;
+
     }
 
     public Long getId() {
@@ -24,4 +27,6 @@ public class QuestionDto {
     public void setContent(String content) {
         this.content = content;
     }
+    public Integer getQuestionDay() { return questionDay; }
+    public void setQuestionDay(Integer questionDay) { this.questionDay = questionDay; }
 }
