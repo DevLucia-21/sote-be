@@ -49,4 +49,10 @@ public class UserController {
         userService.changePassword(req);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteCurrentUser() {
+        userService.deleteCurrentUser();
+        return ResponseUtil.noContent();
+    }
 }
