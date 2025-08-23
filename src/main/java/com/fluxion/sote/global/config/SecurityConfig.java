@@ -42,9 +42,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/**", "/api/users/**", "/api/settings/**", "/health").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll() // 👈 로그인 허용
+                        .requestMatchers("/api/auth/**", "/api/settings/**", "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/genres", "/api/security-questions").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/find-email").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/find-pwd").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/password-reset-temp").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/check-security").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/password").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/stt/results").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/stt/results/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/stt/results/**").authenticated()
