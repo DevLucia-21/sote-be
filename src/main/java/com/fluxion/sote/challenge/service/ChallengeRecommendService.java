@@ -3,7 +3,7 @@ package com.fluxion.sote.challenge.service;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.challenge.entity.ChallengeDefinition;
 import com.fluxion.sote.challenge.entity.UserChallenge;
-import com.fluxion.sote.challenge.enums.EmotionType;
+import com.fluxion.sote.global.enums.EmotionType;
 import com.fluxion.sote.challenge.repository.ChallengeDefinitionRepository;
 import com.fluxion.sote.challenge.repository.UserChallengeRepository;
 import lombok.RequiredArgsConstructor;

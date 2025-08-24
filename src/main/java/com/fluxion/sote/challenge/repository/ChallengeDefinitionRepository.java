@@ -1,7 +1,7 @@
 package com.fluxion.sote.challenge.repository;
 
 import com.fluxion.sote.challenge.entity.ChallengeDefinition;
-import com.fluxion.sote.challenge.enums.EmotionType;
+import com.fluxion.sote.global.enums.EmotionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
