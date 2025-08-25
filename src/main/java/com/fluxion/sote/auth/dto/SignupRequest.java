@@ -1,5 +1,6 @@
 package com.fluxion.sote.auth.dto;
 
+import com.fluxion.sote.global.enums.InstrumentType;
 import com.fluxion.sote.global.validation.NoProfanity;
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;
@@ -17,5 +18,5 @@ public record SignupRequest(
         @NotEmpty List<@NotNull Integer> musicPreferences,
         @NotBlank String securityAnswer,
         @NotNull Integer securityQuestionId,
-        @NotBlank String character
+        @NotNull InstrumentType character
 ) {}

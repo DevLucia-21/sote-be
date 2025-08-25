@@ -2,7 +2,7 @@ package com.fluxion.sote.challenge.controller;
 
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.challenge.dto.ChallengeDefinitionResponse;
-import com.fluxion.sote.challenge.enums.EmotionType;
+import com.fluxion.sote.global.enums.EmotionType;
 import com.fluxion.sote.challenge.service.ChallengeRecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

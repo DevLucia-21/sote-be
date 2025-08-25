@@ -34,6 +34,9 @@ dependencies {
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'com.google.firebase:firebase-admin:9.2.0'
+	implementation platform('org.apache.httpcomponents.client5:httpclient5-parent:5.2.1')
+	implementation 'org.apache.httpcomponents.client5:httpclient5'
+	implementation 'org.apache.httpcomponents.core5:httpcore5'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.postgresql:postgresql'

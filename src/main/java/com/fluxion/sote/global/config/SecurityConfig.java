@@ -42,7 +42,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll() // 👈 로그인 허용
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/**", "/api/settings/**", "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/genres", "/api/security-questions").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/find-email").permitAll()
@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/diaries").authenticated()
+                        //.requestMatchers("/api/analysis/**").authenticated()
+                        .requestMatchers("/api/analysis/**").permitAll()
                         .anyRequest().authenticated()
                 )
 

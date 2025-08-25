@@ -19,9 +19,9 @@ public interface ProfileService {
 
     /**
      * 로그인한 사용자의 기본 프로필 정보 수정
-     * @param request ProfileUpdateRequest (닉네임, 캐릭터, 이미지 URL, 음악 취향 포함)
+     * @return 수정 후 최신 ProfileResponse
      */
-    void updateMyProfile(ProfileUpdateRequest request);
+    ProfileResponse updateMyProfile(ProfileUpdateRequest request);
 
     /**
      * 로그인한 사용자의 프로필 이미지 업로드/변경
@@ -33,4 +33,16 @@ public interface ProfileService {
      * 로그인한 사용자의 프로필 이미지 삭제
      */
     void deleteProfileImage();
+
+    /**
+     * 로그인한 사용자의 프로필 이미지 바이너리 로드 (이미지 조회용)
+     * @return byte[] 이미지 바이트
+     */
+    byte[] loadMyProfileImage();
+
+    /**
+     * 로그인한 사용자의 프로필 이미지 Content-Type 조회 (예: image/png, image/jpeg)
+     * @return contentType
+     */
+    String getMyProfileImageContentType();
 }

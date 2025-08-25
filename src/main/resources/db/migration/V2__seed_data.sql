@@ -26,6 +26,13 @@ VALUES (
   'ROLE_USER',
   '1990-01-01',
   'defaultAnswer',      -- 보안 질문 기본 답변
-  'piano'
+  'PIANO'
 )
 ON CONFLICT (email) DO NOTHING;
+
+-- 3) 장르 연결 (예: pop(id=2), jazz(id=3))
+-- 유저 id 가져오기
+-- 예: user_id = 1이라고 가정
+INSERT INTO public.user_genres (user_id, genre_id)
+VALUES (1, 2), (1, 3)
+ON CONFLICT DO NOTHING;

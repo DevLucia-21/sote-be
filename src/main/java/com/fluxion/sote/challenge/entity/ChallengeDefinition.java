@@ -1,6 +1,6 @@
 package com.fluxion.sote.challenge.entity;
 
-import com.fluxion.sote.challenge.enums.EmotionType;
+import com.fluxion.sote.global.enums.EmotionType;
 import com.fluxion.sote.global.util.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
