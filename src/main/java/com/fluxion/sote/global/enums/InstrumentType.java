@@ -1,18 +1,13 @@
 package com.fluxion.sote.global.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum InstrumentType {
-    PIANO,
-    GUITAR,
-    DRUM,
-    VIOLIN,
-    FLUTE;
+    PIANO, GUITAR, DRUM, VIOLIN, FLUTE;
 
-    public static InstrumentType fromString(String value) {
-        if (value == null) return null;
-        return InstrumentType.valueOf(value.trim().toUpperCase());
-    }
-
-    public String toLower() {
-        return name().toLowerCase();
+    @JsonCreator
+    public static InstrumentType from(Object v) {
+        if (v == null) return null;
+        return InstrumentType.valueOf(v.toString().trim().toUpperCase());
     }
 }

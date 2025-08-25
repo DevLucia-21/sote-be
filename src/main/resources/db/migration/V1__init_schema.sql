@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS public.users (
   created_at          TIMESTAMP    NOT NULL DEFAULT now(),
   profile_image       bytea,
   profile_image_url   VARCHAR(255),
-  character           VARCHAR(20)  NOT NULL DEFAULT 'piano'
+  character           VARCHAR(20)  NOT NULL DEFAULT 'PIANO'
+    CHECK (character IN ('PIANO','GUITAR','DRUM','VIOLIN','FLUTE'))
 );
 
 CREATE TABLE IF NOT EXISTS public.genres (

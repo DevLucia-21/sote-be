@@ -1,5 +1,6 @@
 package com.fluxion.sote.auth.entity;
 
+import com.fluxion.sote.global.enums.InstrumentType;
 import com.fluxion.sote.setting.entity.FcmToken;
 import com.fluxion.sote.setting.enums.NotificationType;
 import jakarta.persistence.*;
@@ -54,8 +55,9 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "character", nullable = false, length = 20)
-    private String character = "piano";
+    private InstrumentType character = InstrumentType.PIANO;
 
     @Column(name = "profile_image", columnDefinition = "bytea")
     private byte[] profileImage;
