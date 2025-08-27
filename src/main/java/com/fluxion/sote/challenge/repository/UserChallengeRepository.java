@@ -1,7 +1,7 @@
 package com.fluxion.sote.challenge.repository;
 
-import com.fluxion.sote.challenge.entity.UserChallenge;
 import com.fluxion.sote.auth.entity.User;
+import com.fluxion.sote.challenge.entity.UserChallenge;
 import com.fluxion.sote.global.enums.EmotionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,11 +11,35 @@ import java.util.Optional;
 
 public interface UserChallengeRepository extends JpaRepository<UserChallenge, Long> {
 
-    // 오늘의 추천 챌린지 존재 여부
+    // 오늘의 추천 챌린지 조회
     Optional<UserChallenge> findByUserAndDate(User user, LocalDate date);
 
-    // 최근 N일간 수행한 챌린지 목록
-    List<UserChallenge> findByUserAndChallenge_EmotionTypeAndDateAfter(User user, EmotionType emotionType, LocalDate afterDate);
+    // 최근 N일간 수행한 특정 감정 타입 챌린지 목록
+    List<UserChallenge> findByUserAndChallenge_EmotionTypeAndDateAfter(
+            User user,
+            EmotionType emotionType,
+            LocalDate afterDate
+    );
 
-    List<UserChallenge> findByUserAndIsCompletedTrue(User user);
+    // 완료된 챌린지 목록 조회
+    List<UserChallenge> findByUserAndCompletedTrue(User user);
+
+    // 완료된 챌린지 목록 (최신순)
+    List<UserChallenge> findByUserAndCompletedTrueOrderByCompletedAtDesc(User user);
+
+    // 완료 횟수 세기 (전체)
+    long countByUserAndCompletedTrue(User user);
+
+    // 완료 횟수 세기 (감정별)
+    long countByUserAndChallenge_EmotionTypeAndCompletedTrue(User user, EmotionType emotionType);
+
+    // 완료 횟수 세기 (카테고리별)
+    long countByUserAndChallenge_CategoryAndCompletedTrue(User user, String category);
+
+    // 특정 감정 타입의 월별 완료 횟수 (통계용)
+    long countByChallenge_EmotionTypeAndDateBetweenAndCompletedTrue(
+            EmotionType emotionType,
+            LocalDate startDate,
+            LocalDate endDate
+    );
 }

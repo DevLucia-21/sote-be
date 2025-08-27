@@ -38,8 +38,8 @@ public class Analysis {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
-    // 결과 1:1 (analysis_result) — 조회 편의용 양방향 추가
-    @OneToOne(mappedBy = "analysis", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    // 결과 1:1 (analysis_result) — 조회 편의용 양방향
+    @OneToOne(mappedBy = "analysis", fetch = FetchType.LAZY) // <-- cascade 제거
     private AnalysisResult result;
 
     // 장르 다대다: analysis_genres 조인 테이블

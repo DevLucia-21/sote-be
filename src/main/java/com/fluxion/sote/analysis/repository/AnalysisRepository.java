@@ -1,6 +1,7 @@
 package com.fluxion.sote.analysis.repository;
 
 import com.fluxion.sote.analysis.entity.Analysis;
+import com.fluxion.sote.auth.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
@@ -22,4 +23,6 @@ public interface AnalysisRepository extends JpaRepository<Analysis, Long> {
     List<Analysis> findAllByUser_IdAndAnalysisDateBetweenOrderByAnalysisDateDesc(
             Long userId, LocalDate startDate, LocalDate endDate
     );
+
+    Optional<Analysis> findByUserAndAnalysisDate(User user, LocalDate analysisDate);
 }

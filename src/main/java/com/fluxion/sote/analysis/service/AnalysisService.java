@@ -14,7 +14,6 @@ import com.fluxion.sote.global.util.BirthYearUtil;
 import com.fluxion.sote.global.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -51,15 +50,18 @@ public class AnalysisService {
         ZoneId KST = ZoneId.of("Asia/Seoul");
         LocalDate today = LocalDate.now(KST);
 
-        // 1) 분석 메타 저장 (하루 1회: (user_id, analysis_date) UNIQUE)
-        Analysis a = new Analysis();
-        a.setUser(user);
-        a.setBirthYear(BirthYearUtil.extractYear(user.getBirthDate()));
-        a.setAnalysisDate(today);
+        // 1) 오늘자 Analysis 조회 or 신규 생성
+        Analysis a = analysisRepo.findByUserAndAnalysisDate(user, today)
+                .orElseGet(() -> {
+                    Analysis na = new Analysis();
+                    na.setUser(user);
+                    na.setBirthYear(BirthYearUtil.extractYear(user.getBirthDate()));
+                    na.setAnalysisDate(today);
+                    return analysisRepo.saveAndFlush(na);
+                });
 
-        try {
-            a = analysisRepo.saveAndFlush(a);
-        } catch (DataIntegrityViolationException e) {
+        // 이미 결과가 있다면 "오늘 분석 끝" 반환
+        if (a.getResult() != null) {
             Map<String, Object> data = new HashMap<>();
             data.put("code", "ALREADY_ANALYZED_TODAY");
             data.put("message", "오늘 분석은 이미 완료되었습니다.");
@@ -69,11 +71,11 @@ public class AnalysisService {
         // 2) AI 호출용 payload 구성
         Map<String, Object> payload = new HashMap<>();
         payload.put("text", req != null ? req.getText() : null);
-        payload.put("year", a.getBirthYear());  // DB에서 가져온 출생연도
+        payload.put("year", a.getBirthYear());
 
-        // 사용자의 선호 장르를 DB에서 조회
+        // 사용자의 선호 장르
         List<String> preferredGenres = user.getMusicPreferences().stream()
-                .map(Genre::getName)   // Genre 엔티티의 name 필드
+                .map(Genre::getName)
                 .toList();
         payload.put("user_preferred_genres", preferredGenres);
 
@@ -89,7 +91,7 @@ public class AnalysisService {
                     url,
                     HttpMethod.POST,
                     new HttpEntity<>(payload, headers),
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
+                    new ParameterizedTypeReference<>() {}
             );
             body = resp.getBody();
             if (!resp.getStatusCode().is2xxSuccessful() || body == null) {

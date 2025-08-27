@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/diaries").authenticated()
                         //.requestMatchers("/api/analysis/**").authenticated()
                         .requestMatchers("/api/analysis/**").permitAll()
+                        .requestMatchers("/api/challenge/**").authenticated()
                         .anyRequest().authenticated()
                 )
 

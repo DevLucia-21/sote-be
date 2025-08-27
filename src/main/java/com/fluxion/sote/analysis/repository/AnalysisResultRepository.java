@@ -26,4 +26,7 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
           AND ar.selected_track_artist IS NOT NULL
         """, nativeQuery = true)
     List<String> findRecentSelectedKeys(@Param("userId") Long userId);
+
+    // 특정 유저의 최신 분석 결과
+    Optional<AnalysisResult> findTopByAnalysis_User_IdOrderByCreatedAtDesc(Long userId);
 }

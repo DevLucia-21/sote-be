@@ -14,18 +14,23 @@ public class ChallengeStatusService {
 
     private final UserChallengeRepository userChallengeRepo;
 
+    /**
+     * 오늘 챌린지 추천 여부 및 완료 여부 조회
+     */
     public TodayChallengeStatus getTodayStatus(User user) {
         return userChallengeRepo.findByUserAndDate(user, LocalDate.now())
                 .map(ch -> TodayChallengeStatus.builder()
-                        .isRecommended(true)
-                        .isCompleted(ch.isCompleted())
+                        .recommended(true)
+                        .completed(ch.isCompleted())
                         .challengeId(ch.getChallenge().getId())
                         .content(ch.getChallenge().getContent())
                         .emotionType(ch.getChallenge().getEmotionType())
+                        .category(ch.getChallenge().getCategory())
+                        .completedAt(ch.getCompletedAt())
                         .build())
                 .orElse(TodayChallengeStatus.builder()
-                        .isRecommended(false)
-                        .isCompleted(false)
+                        .recommended(false)
+                        .completed(false)
                         .build());
     }
 }

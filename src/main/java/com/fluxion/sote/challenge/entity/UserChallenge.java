@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -17,17 +18,27 @@ public class UserChallenge {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private ChallengeDefinition challenge;
 
-    private LocalDate date; // 수행 날짜
+    private LocalDate date; // 추천된 날짜
 
-    private boolean isCompleted;
+    @Column(name = "is_completed")  // DB 컬럼명은 is_completed 유지
+    private boolean completed;
 
+    private LocalDateTime completedAt; // 실제 완료 시각
+
+    /**
+     * 챌린지 완료 처리
+     */
     public void complete() {
-        this.isCompleted = true;
+        if (this.completed) {
+            throw new IllegalStateException("이미 완료된 챌린지입니다.");
+        }
+        this.completed = true;
+        this.completedAt = LocalDateTime.now();
     }
 }
