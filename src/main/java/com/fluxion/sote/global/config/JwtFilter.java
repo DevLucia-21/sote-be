@@ -62,10 +62,10 @@ public class JwtFilter extends OncePerRequestFilter {
                 User userEntity = userRepository.findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED));
 
-                // 👉 challenge 컨트롤러용 (@RequestAttribute("user"))
+                // challenge 컨트롤러용 (@RequestAttribute("user"))
                 request.setAttribute("user", userEntity);
 
-                // 👉 analysis 서비스용 (principal = userId)
+                // analysis 서비스용 (principal = userId)
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
                                 userId, // principal은 Long
