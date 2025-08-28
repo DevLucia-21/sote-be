@@ -37,9 +37,6 @@ public class User {
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
-    @Column(name = "security_answer", nullable = false, length = 100)
-    private String securityAnswer;
-
     /**
      * 유저 ↔ 장르 다대다 매핑
      * user_genres 조인 테이블을 통해 Genre 엔티티와 연결

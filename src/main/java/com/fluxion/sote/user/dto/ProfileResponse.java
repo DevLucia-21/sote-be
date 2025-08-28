@@ -2,6 +2,7 @@ package com.fluxion.sote.user.dto;
 
 import com.fluxion.sote.global.enums.InstrumentType;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -13,10 +14,10 @@ import java.util.Set;
  */
 public class ProfileResponse {
 
-    private Long userId;
     private String email;
     private String nickname;
     private InstrumentType character;
+    private LocalDate birthDate;
 
     private boolean hasProfileImage;
     private String imageUrl;             // 예: "/api/users/profile/image"
@@ -32,20 +33,21 @@ public class ProfileResponse {
     /**
      * 권장 생성자 (서비스에서 모든 값 확정 후 전달)
      */
-    public ProfileResponse(Long userId,
+    public ProfileResponse(
                            String email,
                            String nickname,
                            InstrumentType character,
+                           LocalDate birthDate,
                            boolean hasProfileImage,
                            String imageUrl,
                            String profileImageUrl,
                            int totalDiaryCount,
                            List<String> savedImageUrls,
                            Set<Integer> musicPreferenceIds) {
-        this.userId = userId;
         this.email = email;
         this.nickname = nickname;
         this.character = character;
+        this.birthDate = birthDate;
         this.hasProfileImage = hasProfileImage;
         this.imageUrl = imageUrl;
         this.profileImageUrl = profileImageUrl;
@@ -56,9 +58,6 @@ public class ProfileResponse {
 
     // ---------- getters / setters ----------
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
@@ -67,6 +66,9 @@ public class ProfileResponse {
 
     public InstrumentType getCharacter() { return character; }
     public void setCharacter(InstrumentType character) { this.character = character; }
+
+    public LocalDate getBirthDate() { return birthDate; }
+    public void setBirthDate(LocalDate birthDate) { this.birthDate = birthDate; }
 
     public boolean isHasProfileImage() { return hasProfileImage; }
     public void setHasProfileImage(boolean hasProfileImage) { this.hasProfileImage = hasProfileImage; }

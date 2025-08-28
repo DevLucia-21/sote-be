@@ -1,8 +1,10 @@
+// src/main/java/com/fluxion/sote/user/service/ProfileServiceImpl.java
 package com.fluxion.sote.user.service;
 
 import com.fluxion.sote.auth.entity.Genre;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.auth.repository.GenreRepository;
+import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.SecurityUtil;
 import com.fluxion.sote.user.dto.ProfileResponse;
 import com.fluxion.sote.user.dto.ProfileUpdateRequest;
@@ -39,25 +41,38 @@ public class ProfileServiceImpl implements ProfileService {
     public ProfileResponse updateMyProfile(ProfileUpdateRequest request) {
         User user = SecurityUtil.getCurrentUser();
 
+        // 닉네임
         if (request.getNickname() != null) {
             user.setNickname(request.getNickname());
         }
+
+        // 캐릭터(악기)
         if (request.getCharacter() != null) {
             user.setCharacter(request.getCharacter());
         }
-        // 이미지 URL은 보통 업로드 엔드포인트에서 관리. 필요 시만 반영
-        if (request.getProfileImageUrl() != null) {
-            user.setProfileImageUrl(request.getProfileImageUrl());
+
+        // 생년월일
+        if (request.getBirthDate() != null) {
+            user.setBirthDate(request.getBirthDate());
         }
 
+        // 이미지 URL
+        if (request.getProfileImageUrl() != null) {
+            if (request.getProfileImageUrl().isEmpty()) {
+                user.setProfileImageUrl(null); // "" 이면 해제 처리
+            } else {
+                user.setProfileImageUrl(request.getProfileImageUrl());
+            }
+        }
+
+        // 음악 취향
         Set<Integer> genreIds = request.getGenreIds();
-        if (genreIds != null && !genreIds.isEmpty()) {
+        if (genreIds != null) {
             var genres = new HashSet<>(genreRepository.findAllById(genreIds));
             user.setMusicPreferences(genres);
         }
 
         userRepository.save(user);
-        // 수정 후 최신 상태 반환
         return toResponse(user);
     }
 
@@ -71,7 +86,6 @@ public class ProfileServiceImpl implements ProfileService {
             throw new RuntimeException("프로필 이미지가 허용 용량(5MB)을 초과했습니다.");
         }
 
-        // MIME 유형 필터링 (jpeg/png만 허용)
         String contentType = image.getContentType();
         if (contentType != null &&
                 !(contentType.equalsIgnoreCase("image/jpeg")
@@ -82,7 +96,6 @@ public class ProfileServiceImpl implements ProfileService {
         User user = SecurityUtil.getCurrentUser();
         try {
             user.setProfileImage(image.getBytes());
-            // DB에 contentType 필드가 없다면, 조회 시 매직넘버로 판별 (아래 getMyProfileImageContentType)
             userRepository.save(user);
         } catch (IOException e) {
             throw new RuntimeException("프로필 이미지 저장 실패", e);
@@ -97,7 +110,6 @@ public class ProfileServiceImpl implements ProfileService {
         userRepository.save(user);
     }
 
-    // 추가: 이미지 바이너리 로드 (GET /api/users/profile/image 에서 사용)
     @Override
     @Transactional(readOnly = true)
     public byte[] loadMyProfileImage() {
@@ -109,7 +121,6 @@ public class ProfileServiceImpl implements ProfileService {
         return data;
     }
 
-    // 추가: Content-Type 판별 (간단 매직넘버 검사 → 없으면 application/octet-stream)
     @Override
     @Transactional(readOnly = true)
     public String getMyProfileImageContentType() {
@@ -136,17 +147,16 @@ public class ProfileServiceImpl implements ProfileService {
         boolean hasProfileImage = hasBinary || hasUrl;
         String binaryEndpoint = "/api/users/profile/image";
 
-        // profileImageUrl: DB URL 있으면 그대로, 없고 바이너리만 있으면 binaryEndpoint, 없으면 null
         String legacyUrl = hasUrl ? user.getProfileImageUrl() : (hasBinary ? binaryEndpoint : null);
 
         return new ProfileResponse(
-                user.getId(),          // userId
                 user.getEmail(),
                 user.getNickname(),
                 user.getCharacter(),
+                user.getBirthDate(),
                 hasProfileImage,
-                binaryEndpoint,        // imageUrl
-                legacyUrl,             // profileImageUrl (DB URL or fallback)
+                binaryEndpoint,
+                legacyUrl,
                 totalDiaryCount,
                 savedImages,
                 genreIds
@@ -154,7 +164,6 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     private String detectContentType(byte[] bytes) {
-        // PNG: 89 50 4E 47 0D 0A 1A 0A
         if (bytes.length >= 8
                 && (bytes[0] & 0xFF) == 0x89
                 && (bytes[1] & 0xFF) == 0x50
@@ -166,7 +175,6 @@ public class ProfileServiceImpl implements ProfileService {
                 && (bytes[7] & 0xFF) == 0x0A) {
             return "image/png";
         }
-        // JPEG: FF D8 FF
         if (bytes.length >= 3
                 && (bytes[0] & 0xFF) == 0xFF
                 && (bytes[1] & 0xFF) == 0xD8
