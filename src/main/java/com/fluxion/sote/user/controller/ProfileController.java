@@ -33,12 +33,12 @@ public class ProfileController {
     }
 
     // 프로필 이미지 업로드/변경 (multipart/form-data)
-    @PutMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Void> updateProfileImage(
-            @RequestPart("image") MultipartFile image) {
+    @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> updateProfileImage(@RequestParam("image") MultipartFile image) {
         profileService.updateProfileImage(image);
         return ResponseEntity.noContent().build();
     }
+
 
     // 프로필 이미지 삭제
     @DeleteMapping("/image")

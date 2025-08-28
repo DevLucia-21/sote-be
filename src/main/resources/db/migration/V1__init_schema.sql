@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS public.users (
   nickname            VARCHAR(50)  NOT NULL,
   role                VARCHAR(20)  NOT NULL DEFAULT 'ROLE_USER',
   birth_date          DATE         NOT NULL,
-  security_answer     VARCHAR(100) NOT NULL DEFAULT '',
   dark_mode           BOOLEAN      NOT NULL DEFAULT false,
   created_at          TIMESTAMP    NOT NULL DEFAULT now(),
   profile_image       bytea,

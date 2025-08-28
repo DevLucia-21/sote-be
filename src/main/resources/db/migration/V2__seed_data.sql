@@ -15,7 +15,6 @@ INSERT INTO public.users (
   nickname,
   role,
   birth_date,
-  security_answer,      -- 추가
   character
 )
 VALUES (
@@ -24,8 +23,7 @@ VALUES (
   '$2a$10$RPUXf.IMjszb5Q6t9EzyZ.Z2Nq.46zBoOJVdCzzLlzlLhS3sxjLjK',
   'tester',
   'ROLE_USER',
-  '1990-01-01',
-  'defaultAnswer',      -- 보안 질문 기본 답변
+  '2000-07-01',
   'PIANO'
 )
 ON CONFLICT (email) DO NOTHING;

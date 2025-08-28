@@ -25,6 +25,7 @@ public class UserController {
         return ResponseUtil.ok(resp);
     }
 
+    //보안상 삭제 하는 것이 좋음
     @PostMapping("/find-pwd")
     public ResponseEntity<FindPwdResponse> findPassword(@Valid @RequestBody FindPwdRequest req) {
         FindPwdResponse resp = userService.findPassword(req);
@@ -39,7 +40,7 @@ public class UserController {
 
     @PostMapping("/check-security")
     public ResponseEntity<SecurityCheckResponse> checkSecurity(@RequestBody SecurityCheckRequest req) {
-        boolean ok = userService.checkSecurity(req.getUserId(), req.getQuestionId(), req.getAnswer());
+        boolean ok = userService.checkSecurity(req.getEmail(), req.getQuestionId(), req.getAnswer());
         return ResponseEntity.ok(new SecurityCheckResponse(ok));
     }
 

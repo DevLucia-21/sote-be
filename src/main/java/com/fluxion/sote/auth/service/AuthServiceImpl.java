@@ -6,11 +6,15 @@ import com.fluxion.sote.auth.dto.SignupRequest;
 import com.fluxion.sote.auth.dto.TokenResponse;
 import com.fluxion.sote.auth.entity.Genre;
 import com.fluxion.sote.auth.entity.User;
+import com.fluxion.sote.auth.entity.UserSecurityAnswer;
 import com.fluxion.sote.auth.repository.AuthRepository;
 import com.fluxion.sote.auth.repository.GenreRepository;
+import com.fluxion.sote.auth.repository.SecurityQuestionRepository;
+import com.fluxion.sote.auth.repository.UserSecurityAnswerRepository;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.JwtConstants;
 import com.fluxion.sote.global.util.JwtUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,34 +23,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final AuthRepository userRepo;
     private final GenreRepository genreRepo;
+    private final SecurityQuestionRepository securityQuestionRepo;
+    private final UserSecurityAnswerRepository userSecurityAnswerRepo;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final RedisTemplate<String, String> redis;
+    private final RedisTemplate<String, String> redis; // @Primary 덕분에 자동 주입됨
     private final JavaMailSender mailSender;
-
-    public AuthServiceImpl(
-            AuthRepository userRepo,
-            GenreRepository genreRepo,
-            BCryptPasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil,
-            RedisTemplate<String, String> redisTemplate,
-            JavaMailSender mailSender
-    ) {
-        this.userRepo = userRepo;
-        this.genreRepo = genreRepo;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-        this.redis = redisTemplate;
-        this.mailSender = mailSender;
-    }
 
     @Override
     @Transactional
@@ -65,9 +55,18 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(req.password()));
         user.setNickname(req.nickname());
         user.setBirthDate(req.birthDate());
-        user.setSecurityAnswer(req.securityAnswer());
+        user.setCharacter(req.character());
         user.setMusicPreferences(Set.copyOf(genres));
-        userRepo.save(user);
+
+        user = userRepo.save(user);
+
+        UserSecurityAnswer usa = new UserSecurityAnswer();
+        usa.setUser(user);
+        usa.setQuestion(securityQuestionRepo.findById(req.questionId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 보안 질문입니다.")));
+        usa.setAnswerEncrypted(passwordEncoder.encode(req.securityAnswer()));
+
+        userSecurityAnswerRepo.save(usa);
     }
 
     @Override
@@ -82,11 +81,12 @@ public class AuthServiceImpl implements AuthService {
         String refresh = jwtUtil.createRefreshToken(user.getId(), user.getRole());
         String jti     = jwtUtil.getJti(refresh);
 
-        redis.opsForValue()
-                .set(JwtConstants.REFRESH_PREFIX + jti,
-                        user.getId().toString(),
-                        jwtUtil.getRefreshExpiry(),
-                        TimeUnit.MILLISECONDS);
+        redis.opsForValue().set(
+                JwtConstants.REFRESH_PREFIX + jti,
+                user.getId().toString(),
+                jwtUtil.getRefreshExpiry(),
+                TimeUnit.MILLISECONDS
+        );
 
         return new TokenResponse(access, refresh, jwtUtil.getAccessExpiry());
     }
@@ -113,11 +113,12 @@ public class AuthServiceImpl implements AuthService {
         String newRefresh = jwtUtil.createRefreshToken(userId, user.getRole());
         String newJti     = jwtUtil.getJti(newRefresh);
 
-        redis.opsForValue()
-                .set(JwtConstants.REFRESH_PREFIX + newJti,
-                        userId.toString(),
-                        jwtUtil.getRefreshExpiry(),
-                        TimeUnit.MILLISECONDS);
+        redis.opsForValue().set(
+                JwtConstants.REFRESH_PREFIX + newJti,
+                userId.toString(),
+                jwtUtil.getRefreshExpiry(),
+                TimeUnit.MILLISECONDS
+        );
 
         return new TokenResponse(newAccess, newRefresh, jwtUtil.getAccessExpiry());
     }
@@ -129,18 +130,16 @@ public class AuthServiceImpl implements AuthService {
 
         Long ttl = redis.getExpire(key, TimeUnit.MILLISECONDS);
         if (ttl != null && ttl > 0) {
-            redis.opsForValue()
-                    .set(JwtConstants.BLACKLIST_PREFIX + jti,
-                            "logout",
-                            ttl,
-                            TimeUnit.MILLISECONDS);
+            redis.opsForValue().set(
+                    JwtConstants.BLACKLIST_PREFIX + jti,
+                    "logout",
+                    ttl,
+                    TimeUnit.MILLISECONDS
+            );
             redis.delete(key);
         }
     }
 
-    // ================================================================
-    // Helper to reduce duplication
-    // ================================================================
     private User lookupByEmail(String email) {
         return userRepo.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));

@@ -1,13 +1,12 @@
 package com.fluxion.sote.auth.dto;
 
 public class SecurityCheckRequest {
-    private Long userId;
+    private String email;
     private Integer questionId;
     private String answer;
 
-    // getters / setters
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
     public Integer getQuestionId() { return questionId; }
     public void setQuestionId(Integer questionId) { this.questionId = questionId; }
@@ -15,3 +14,4 @@ public class SecurityCheckRequest {
     public String getAnswer() { return answer; }
     public void setAnswer(String answer) { this.answer = answer; }
 }
+

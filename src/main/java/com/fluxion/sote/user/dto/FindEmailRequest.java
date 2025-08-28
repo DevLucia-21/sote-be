@@ -2,11 +2,15 @@ package com.fluxion.sote.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 
 public class FindEmailRequest {
 
+    @NotBlank
+    private String nickname;        // 사용자 닉네임 (중복 가능)
+
     @NotNull
-    private Long userId;            // 사용자 식별용 ID
+    private LocalDate birthDate;    // 생년월일 (추가 식별자)
 
     @NotNull
     private Integer questionId;     // 보안 질문 ID
@@ -18,19 +22,27 @@ public class FindEmailRequest {
     public FindEmailRequest() {}
 
     // 전체 필드 생성자
-    public FindEmailRequest(Long userId, Integer questionId, String securityAnswer) {
-        this.userId = userId;
+    public FindEmailRequest(String nickname, LocalDate birthDate, Integer questionId, String securityAnswer) {
+        this.nickname = nickname;
+        this.birthDate = birthDate;
         this.questionId = questionId;
         this.securityAnswer = securityAnswer;
     }
 
     // getters / setters
 
-    public Long getUserId() {
-        return userId;
+    public String getNickname() {
+        return nickname;
     }
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
     }
 
     public Integer getQuestionId() {
