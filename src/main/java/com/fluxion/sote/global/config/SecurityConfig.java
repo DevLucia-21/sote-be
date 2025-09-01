@@ -43,24 +43,38 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/**", "/api/settings/**", "/health").permitAll()
+                        .requestMatchers("/api/auth/**", "/health").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/genres", "/api/security-questions").permitAll()
+
                         .requestMatchers(HttpMethod.POST, "/api/users/find-email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/find-pwd").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/password-reset-temp").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/check-security").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/users/password").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/users/profile/image").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/profile/image").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/profile/image").authenticated()
+                        .requestMatchers("/api/users/keywords/**").authenticated()
+
+                        .requestMatchers("/api/settings/notifications/**").authenticated()
+                        .requestMatchers("/api/settings/theme/**").authenticated()
+                        .requestMatchers("/api/settings/token").permitAll()
+                        .requestMatchers("/api/settings/send").permitAll()
+
                         .requestMatchers(HttpMethod.POST, "/api/stt/results").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/stt/results/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/stt/results/**").authenticated()
+
                         .requestMatchers(HttpMethod.POST, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/diaries").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/diaries").authenticated()
-                        //.requestMatchers("/api/analysis/**").authenticated()
-                        .requestMatchers("/api/analysis/**").permitAll()
+
+                        .requestMatchers("/api/analysis/**").authenticated()
                         .requestMatchers("/api/challenge/**").authenticated()
+
                         .anyRequest().authenticated()
                 )
 
