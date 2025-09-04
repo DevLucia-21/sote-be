@@ -30,6 +30,11 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto write(User user, String content, LocalDate date,
                           WriteType writeType, List<Long> keywordIds, EmotionType emotionType) {
+        // 미래 날짜 금지
+        if (date.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
+        }
+
         diaryRepo.findByUserAndDate(user, date).ifPresent(d -> {
             throw new IllegalArgumentException("이미 작성한 일기가 있습니다.");
         });
@@ -55,7 +60,6 @@ public class DiaryServiceImpl implements DiaryService {
     @Override
     @Transactional
     public DiaryDto writeOcr(User user, String content, String imageUrl, LocalDate date) {
-        // 선택 필드 없이 호출되면 확장 시그니처로 위임 (null 전달)
         return writeOcr(user, content, imageUrl, date, null, null);
     }
 
@@ -64,6 +68,11 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto writeOcr(User user, String content, String imageUrl, LocalDate date,
                              List<Long> keywordIds, EmotionType emotionType) {
+        // 미래 날짜 금지
+        if (date.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
+        }
+
         diaryRepo.findByUserAndDate(user, date).ifPresent(d -> {
             throw new IllegalArgumentException("이미 작성한 일기가 있습니다.");
         });
@@ -76,10 +85,10 @@ public class DiaryServiceImpl implements DiaryService {
                 .user(user)
                 .date(date)
                 .content(content)
-                .writeType(WriteType.OCR)   // ✅ OCR 고정
-                .imageUrl(imageUrl)         // ✅ 이미지 URL 저장
-                .emotionType(emotionType)   // (선택) 감정
-                .keywords(keywords)         // (선택) 키워드
+                .writeType(WriteType.OCR)   // OCR 고정
+                .imageUrl(imageUrl)         // 이미지 URL 저장
+                .emotionType(emotionType)   // 선택 입력
+                .keywords(keywords)
                 .build();
 
         diaryRepo.save(diary);
@@ -91,6 +100,11 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto update(User user, LocalDate date, String content,
                            List<Long> keywordIds, EmotionType emotionType) {
+        // 미래 날짜 금지
+        if (date.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("미래 일기는 수정할 수 없습니다.");
+        }
+
         Diary diary = diaryRepo.findByUserAndDate(user, date)
                 .orElseThrow(() -> new IllegalArgumentException("해당 날짜의 일기가 존재하지 않습니다."));
 
