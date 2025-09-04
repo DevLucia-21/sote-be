@@ -1,0 +1,4 @@
+ALTER TABLE diaries
+  ADD COLUMN write_type VARCHAR(20) NOT NULL DEFAULT 'TEXT',
+  ADD COLUMN emotion_type VARCHAR(30),
+  ADD COLUMN image_url TEXT;
