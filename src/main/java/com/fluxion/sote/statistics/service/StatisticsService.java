@@ -1,0 +1,18 @@
+package com.fluxion.sote.statistics.service;
+
+import com.fluxion.sote.statistics.dto.*;
+
+public interface StatisticsService {
+    DiaryStatsResponse getDiaryStats(String period);
+    AnalysisStatsResponse getAnalysisStats(String period);
+
+    ChallengeCompletionResponse getChallengeCompletion(String period);
+    ChallengeEmotionPerformanceResponse getChallengeEmotionPerformance(String period);
+    ChallengeBadgeResponse getChallengeBadges(String period);
+
+    MusicStatsResponse getMusicStats(String period);
+
+    KeywordRankingResponse getKeywordRanking(String period);
+    KeywordEmotionRankingResponse getKeywordEmotionRanking(String period);
+    KeywordExploreResponse getKeywordExplore(String period);
+}

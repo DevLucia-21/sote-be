@@ -21,12 +21,6 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
             LocalDate afterDate
     );
 
-    // 완료된 챌린지 목록 조회
-    List<UserChallenge> findByUserAndCompletedTrue(User user);
-
-    // 완료된 챌린지 목록 (최신순)
-    List<UserChallenge> findByUserAndCompletedTrueOrderByCompletedAtDesc(User user);
-
     // 완료 횟수 세기 (전체)
     long countByUserAndCompletedTrue(User user);
 
@@ -36,10 +30,4 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     // 완료 횟수 세기 (카테고리별)
     long countByUserAndChallenge_CategoryAndCompletedTrue(User user, String category);
 
-    // 특정 감정 타입의 월별 완료 횟수 (통계용)
-    long countByChallenge_EmotionTypeAndDateBetweenAndCompletedTrue(
-            EmotionType emotionType,
-            LocalDate startDate,
-            LocalDate endDate
-    );
 }
