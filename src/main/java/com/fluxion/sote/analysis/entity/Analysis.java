@@ -15,19 +15,21 @@ import java.util.Set;
 @Table(name = "analysis",
         uniqueConstraints = @UniqueConstraint(name = "ux_analysis_user_day",
                 columnNames = {"user_id", "analysis_date"}))
-@Getter @Setter
+@Getter
+@Setter
 public class Analysis {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)               // FK → users.id
+    @ManyToOne(fetch = FetchType.LAZY, optional = false) // ✅ 일기 반드시 연결
+    @JoinColumn(name = "diary_id", nullable = false)
+    private Diary diary;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)               // FK → diaries.id (nullable)
-    @JoinColumn(name = "diary_id")
-    private Diary diary;
 
     @Column(name = "birth_year", nullable = false)
     private int birthYear;
@@ -38,11 +40,11 @@ public class Analysis {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
-    // 결과 1:1 (analysis_result) — 조회 편의용 양방향
-    @OneToOne(mappedBy = "analysis", fetch = FetchType.LAZY) // <-- cascade 제거
+    // 결과 1:1 (analysis_result)
+    @OneToOne(mappedBy = "analysis", fetch = FetchType.LAZY)
     private AnalysisResult result;
 
-    // 장르 다대다: analysis_genres 조인 테이블
+    // 장르 다대다
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "analysis_genres",
@@ -58,7 +60,7 @@ public class Analysis {
         if (createdAt == null) createdAt = OffsetDateTime.now(KST);
     }
 
-    // 편의 메서드 (양방향 연동)
+    // 편의 메서드
     public void attachResult(AnalysisResult r) {
         if (r != null) {
             r.setAnalysis(this);

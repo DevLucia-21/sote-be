@@ -2,10 +2,14 @@ package com.fluxion.sote.analysis.dto;
 
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
 import java.util.List;
 
-/** FE에서 넘어오는 분석 요청 (장르는 선택적) */
+/** FE에서 넘어오는 분석 요청 */
 public class AnalysisRequest {
+
+    /** 분석할 일기 ID (필수) */
+    private Long diaryId;
 
     /** 최대 10개, 각 ID는 양수 */
     @Size(max = 10)
@@ -15,9 +19,27 @@ public class AnalysisRequest {
     @Size(max = 2000)
     private String text;
 
-    public List<Integer> getGenreIds() { return genreIds; }
-    public void setGenreIds(List<Integer> genreIds) { this.genreIds = genreIds; }
+    public Long getDiaryId() {
+        return diaryId;
+    }
 
-    public String getText() { return text; }
-    public void setText(String text) { this.text = text; }
+    public void setDiaryId(Long diaryId) {
+        this.diaryId = diaryId;
+    }
+
+    public List<Integer> getGenreIds() {
+        return genreIds;
+    }
+
+    public void setGenreIds(List<Integer> genreIds) {
+        this.genreIds = genreIds;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
 }

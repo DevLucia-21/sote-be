@@ -1,8 +1,12 @@
 package com.fluxion.sote.challenge.service;
 
+import com.fluxion.sote.analysis.entity.AnalysisResult;
+import com.fluxion.sote.analysis.repository.AnalysisResultRepository;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.challenge.entity.UserChallenge;
 import com.fluxion.sote.challenge.repository.UserChallengeRepository;
+import com.fluxion.sote.diary.entity.Diary;
+import com.fluxion.sote.lpmusic.service.LpRewardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,38 +18,58 @@ import java.time.LocalDate;
 public class ChallengeCompleteService {
 
     private final UserChallengeRepository userChallengeRepo;
-    private final BadgeService badgeService; // 뱃지 서비스 주입
+    private final BadgeService badgeService;
+    private final AnalysisResultRepository analysisResultRepo;
+    private final LpRewardService lpRewardService;
 
     /**
      * 오늘 추천된 챌린지를 완료 처리한다.
-     * 완료 후 감정/카테고리 누적 조건을 검사하여 뱃지를 발급한다.
+     * 완료 후 뱃지 발급을 수행하고,
+     * 최신 AnalysisResult의 selectedTrack을 기반으로 LP 보상을 지급한다.
      */
     @Transactional
     public void completeTodayChallenge(User user, Long challengeId) {
         LocalDate today = LocalDate.now();
 
-        // 오늘 추천된 챌린지 가져오기
+        // 1. 오늘 추천된 챌린지 확인
         UserChallenge challenge = userChallengeRepo.findByUserAndDate(user, today)
                 .orElseThrow(() -> new IllegalStateException("오늘 추천된 챌린지가 없습니다."));
 
-        // 요청한 챌린지가 오늘 추천된 챌린지가 맞는지 검증
         if (!challenge.getChallenge().getId().equals(challengeId)) {
             throw new IllegalArgumentException("추천된 챌린지와 요청된 챌린지가 다릅니다.");
         }
-
-        // 이미 완료한 경우 예외
         if (challenge.isCompleted()) {
             throw new IllegalStateException("이미 완료한 챌린지입니다.");
         }
 
-        // 완료 처리 (UserChallenge.complete() 내부에서 completedAt 세팅)
+        // 2. 챌린지 완료 처리
         challenge.complete();
 
-        // 완료 후 뱃지 조건 검사 및 발급 (감정 + 카테고리 모두)
+        // 3. 뱃지 조건 검사 및 발급
         badgeService.checkAndAwardBadges(
                 user,
                 challenge.getChallenge().getEmotionType(),
                 challenge.getChallenge().getCategory()
         );
+
+        // 4. 최신 분석 결과에서 selectedTrack 가져오기
+        AnalysisResult latest = analysisResultRepo.findTopByAnalysis_User_IdOrderByCreatedAtDesc(user.getId())
+                .orElseThrow(() -> new IllegalStateException("분석 결과가 없습니다."));
+
+        if (latest.getSelectedTrackTitle() != null && latest.getSelectedTrackArtist() != null) {
+            Diary diary = latest.getAnalysis().getDiary(); // 해당 일기와 연결
+
+            if (diary == null) {
+                throw new IllegalStateException("분석 결과에 연결된 일기가 없습니다.");
+            }
+
+            // 5. LP 보상 지급 (User + Diary + SelectedTrack 정보)
+            lpRewardService.grantReward(
+                    user,
+                    diary,
+                    latest.getSelectedTrackTitle(),
+                    latest.getSelectedTrackArtist()
+            );
+        }
     }
 }
