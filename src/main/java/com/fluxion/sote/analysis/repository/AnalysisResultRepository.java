@@ -1,6 +1,7 @@
 package com.fluxion.sote.analysis.repository;
 
 import com.fluxion.sote.analysis.entity.AnalysisResult;
+import com.fluxion.sote.diary.entity.Diary;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,4 +30,7 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
 
     // 특정 유저의 최신 분석 결과
     Optional<AnalysisResult> findTopByAnalysis_User_IdOrderByCreatedAtDesc(Long userId);
+
+    //특정일기에 연결된 분석 결과 조회
+    Optional<AnalysisResult> findByAnalysis_Diary(Diary diary);
 }
