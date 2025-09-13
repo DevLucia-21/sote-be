@@ -21,4 +21,9 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
             "WHERE d.user = :user AND k.id = :keywordId")
     List<Diary> findByUserAndKeywordId(@Param("user") User user,
                                        @Param("keywordId") Long keywordId);
+
+    /**
+     * 특정 사용자(userId)의 지정된 월(start~end) 일기 조회
+     */
+    List<Diary> findByUser_IdAndDateBetween(Long userId, LocalDate start, LocalDate end);
 }

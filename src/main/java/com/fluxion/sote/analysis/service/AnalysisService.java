@@ -12,6 +12,7 @@ import com.fluxion.sote.auth.entity.Genre;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.diary.entity.Diary;
 import com.fluxion.sote.diary.repository.DiaryRepository;
+import com.fluxion.sote.global.enums.EmotionType;
 import com.fluxion.sote.global.util.BirthYearUtil;
 import com.fluxion.sote.global.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -204,21 +205,31 @@ public class AnalysisService {
     }
 
     /**
-     * AI 응답(body)을 AnalysisResult 엔티티로 변환
+     * AI 응답(body)을 AnalysisResult 엔티티로 변환 + Diary 업데이트
      */
     private AnalysisResult mapResultFromBody(Analysis analysis, Map<String, Object> body) {
         AnalysisResult r = new AnalysisResult();
         r.setAnalysis(analysis);
 
+        // Diary 가져오기
+        Diary diary = analysis.getDiary();
+
         // 감정 결과
         Object emoObj = body.get("emotion");
         if (emoObj instanceof Map<?, ?> emo) {
-            r.setEmotionLabel(Objects.toString(emo.get("label"), null));
+            String label = Objects.toString(emo.get("label"), null);
+            r.setEmotionLabel(label);
+
             Object score = emo.get("score");
             if (score instanceof Number n) {
                 r.setEmotionScore(BigDecimal.valueOf(n.doubleValue()).setScale(4, RoundingMode.HALF_UP));
             }
             r.setEmotionReason(Objects.toString(emo.get("reason"), null));
+
+            // ✅ Diary에도 emotionType 업데이트
+            EmotionType type = EmotionType.fromLabel(label);
+            diary.setEmotionType(type);
+            diaryRepo.save(diary);
         }
 
         // 음악 전체 후보 JSON 저장
