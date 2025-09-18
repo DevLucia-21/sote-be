@@ -15,6 +15,7 @@ public interface KeywordStatisticsRepository extends JpaRepository<Diary, Long> 
             "FROM Diary d JOIN d.keywords k " +
             "WHERE d.user.id = :userId " +
             "AND d.date BETWEEN :start AND :end " +
+            "AND k.content IS NOT NULL " +
             "GROUP BY k.content " +
             "ORDER BY COUNT(d) DESC")
     List<Object[]> findTopKeywordsMonthly(@Param("userId") Long userId,
@@ -25,6 +26,7 @@ public interface KeywordStatisticsRepository extends JpaRepository<Diary, Long> 
     @Query("SELECT d.emotionType, k.content, COUNT(d) " +
             "FROM Diary d JOIN d.keywords k " +
             "WHERE d.user.id = :userId " +
+            "AND k.content IS NOT NULL " +
             "GROUP BY d.emotionType, k.content")
     List<Object[]> findEmotionToKeyword(@Param("userId") Long userId);
 
@@ -32,6 +34,7 @@ public interface KeywordStatisticsRepository extends JpaRepository<Diary, Long> 
     @Query("SELECT k.content, d.emotionType, COUNT(d) " +
             "FROM Diary d JOIN d.keywords k " +
             "WHERE d.user.id = :userId " +
+            "AND k.content IS NOT NULL " +
             "GROUP BY k.content, d.emotionType")
     List<Object[]> findKeywordToEmotion(@Param("userId") Long userId);
 }

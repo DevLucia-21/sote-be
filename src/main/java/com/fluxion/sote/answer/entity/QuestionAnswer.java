@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "question_answers",
@@ -28,9 +29,11 @@ public class QuestionAnswer {
     @Column(name = "answer_text", nullable = false, columnDefinition = "text")
     private String answerText;
 
-    /** 작성 시각 (서비스에서 Asia/Seoul 기준으로 지정) */
     @Column(name = "answered_at", nullable = false)
-    private LocalDateTime answeredAt;
+    private OffsetDateTime answeredAt;
+
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
 
     /** 해당 월의 첫째 날 (예: 2025-08-01) */
     @Column(name = "answer_month", nullable = false)

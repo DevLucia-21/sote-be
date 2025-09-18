@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface KeywordRepository extends JpaRepository<Keyword, Long> {
 
@@ -20,4 +21,10 @@ public interface KeywordRepository extends JpaRepository<Keyword, Long> {
     @Modifying
     @Transactional
     void deleteByIdAndUser(Long id, User user);
+
+    // 사용자 소유 키워드만 단일 조회
+    Optional<Keyword> findByIdAndUser(Long id, User user);
+
+    // 여러 키워드도 사용자 기준으로만 조회
+    List<Keyword> findAllByIdInAndUser(List<Long> ids, User user);
 }

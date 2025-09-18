@@ -29,4 +29,6 @@ public interface DiaryService {
     List<DiaryDto> getBetween(User user, LocalDate from, LocalDate to);
 
     List<DiaryDto> getByKeyword(User user, Long keywordId);
+    // 오늘 일기 여부 확인
+    boolean existsByDate(User user, LocalDate date);
 }

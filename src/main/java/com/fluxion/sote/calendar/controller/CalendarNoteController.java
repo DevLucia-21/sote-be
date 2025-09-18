@@ -1,5 +1,6 @@
 package com.fluxion.sote.calendar.controller;
 
+import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.calendar.dto.CalendarNoteDto;
 import com.fluxion.sote.calendar.service.CalendarNoteService;
 import lombok.RequiredArgsConstructor;
@@ -15,13 +16,13 @@ public class CalendarNoteController {
 
     private final CalendarNoteService calendarNoteService;
 
-    @GetMapping("/{userId}/{year}/{month}")
+    @GetMapping("/{year}/{month}")
     public ResponseEntity<List<CalendarNoteDto>> getMonthlyNotes(
-            @PathVariable Long userId,
+            @RequestAttribute("user") User user,
             @PathVariable int year,
             @PathVariable int month
     ) {
-        List<CalendarNoteDto> notes = calendarNoteService.getMonthlyNotes(userId, year, month);
+        List<CalendarNoteDto> notes = calendarNoteService.getMonthlyNotes(user.getId(), year, month);
         return ResponseEntity.ok(notes);
     }
 }

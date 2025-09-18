@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public class QuestionAnswerDto {
 
@@ -15,14 +16,19 @@ public class QuestionAnswerDto {
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class UpdateRequest {
+        private String answerText; // 수정할 내용
+    }
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Response {
         private Long id;
         private Long questionId;
         private String questionContent;
         private String answerText;
-        private LocalDateTime answeredAt;
+        private OffsetDateTime answeredAt;
         private LocalDate answerMonth;
         private Integer questionDay;
+        private OffsetDateTime updatedAt;
     }
 
     /** 월별 내 답변 리스트 최적화용(질문 메타 포함) */
@@ -31,9 +37,10 @@ public class QuestionAnswerDto {
         private Long answerId;
         private Long questionId;
         private String questionContent;
-        private Integer questionDay;      // Question.day (1~30)
+        private Integer questionDay;
         private String answerText;
-        private LocalDateTime answeredAt;
+        private OffsetDateTime answeredAt;
+        private OffsetDateTime updatedAt;
         private LocalDate date;
     }
 }

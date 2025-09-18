@@ -76,6 +76,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/challenge/**").authenticated()
                         .requestMatchers("/api/statistics/**").authenticated()
 
+                        .requestMatchers("/api/questions/**").authenticated()
+
+
                         .anyRequest().authenticated()
                 )
 

@@ -3,6 +3,7 @@ package com.fluxion.sote.user.controller;
 import com.fluxion.sote.user.dto.KeywordCreateRequest;
 import com.fluxion.sote.user.dto.KeywordResponse;
 import com.fluxion.sote.user.service.KeywordService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,21 +12,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users/keywords")
+@RequiredArgsConstructor
 public class KeywordController {
 
     private final KeywordService keywordService;
-
-    public KeywordController(KeywordService keywordService) {
-        this.keywordService = keywordService;
-    }
 
     /**
      * 키워드 목록 조회
      */
     @GetMapping
     public ResponseEntity<List<KeywordResponse>> getKeywords() {
-        List<KeywordResponse> keywords = keywordService.getKeywords();
-        return ResponseEntity.ok(keywords);
+        return ResponseEntity.ok(keywordService.getKeywords());
     }
 
     /**

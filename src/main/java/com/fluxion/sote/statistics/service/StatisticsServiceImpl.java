@@ -26,20 +26,20 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final KeywordStatisticsRepository keywordStatisticsRepository;
 
     @Override
-    public DiaryStatsResponse getDiaryStats(String period) {
+    public Object getDiaryStats(String period) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if ("overall".equalsIgnoreCase(period)) {
             long totalCount = diaryStatisticsRepository.countTotalByUserId(userId);
-            return new DiaryStatsResponse((int) totalCount, 0);
+            return new DiaryTotalResponse((int) totalCount);
         } else if ("monthly".equalsIgnoreCase(period)) {
             LocalDate now = LocalDate.now();
             long monthlyCount = diaryStatisticsRepository.countMonthlyByUserId(
                     userId,
-                    now.getMonthValue(),
-                    now.getYear()
+                    now.getYear(),
+                    now.getMonthValue()
             );
-            return new DiaryStatsResponse(0, (int) monthlyCount);
+            return new DiaryMonthlyResponse((int) monthlyCount);
         }
 
         throw new IllegalArgumentException("Invalid period: " + period);
@@ -130,7 +130,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 이번 달 범위
         LocalDate now = LocalDate.now();
         OffsetDateTime start = now.withDayOfMonth(1).atStartOfDay().atOffset(ZoneOffset.UTC);
-        OffsetDateTime end = now.withDayOfMonth(now.lengthOfMonth()).atTime(23,59,59).atOffset(ZoneOffset.UTC);
+        OffsetDateTime end = now.withDayOfMonth(now.lengthOfMonth()).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
 
         long monthlyCount = musicStatisticsRepository.countMonthlyRecommendedTracks(userId, start, end);
 
@@ -195,8 +195,11 @@ public class StatisticsServiceImpl implements StatisticsService {
             EmotionType emotion = (EmotionType) row[1];
             Long count = (Long) row[2];
 
-            keywordToEmotions.putIfAbsent(keyword, new HashMap<>());
-            keywordToEmotions.get(keyword).put(emotion, count);
+            // 혹시 모를 null 방어
+            String safeKeyword = (keyword == null) ? "(unknown)" : keyword;
+
+            keywordToEmotions.putIfAbsent(safeKeyword, new HashMap<>());
+            keywordToEmotions.get(safeKeyword).put(emotion, count);
         }
 
         return new KeywordExploreResponse(keywordToEmotions);

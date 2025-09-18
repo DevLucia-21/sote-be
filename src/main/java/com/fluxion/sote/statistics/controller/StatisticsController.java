@@ -16,7 +16,7 @@ public class StatisticsController {
 
     // 1) 일기
     @GetMapping("/diary")
-    public ResponseEntity<DiaryStatsResponse> getDiaryStats(@RequestParam String period) {
+    public ResponseEntity<?> getDiaryStats(@RequestParam String period) {
         return ResponseEntity.ok(statisticsService.getDiaryStats(period));
     }
 

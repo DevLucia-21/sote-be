@@ -23,7 +23,7 @@ public class Analysis {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false) // ✅ 일기 반드시 연결
+    @ManyToOne(fetch = FetchType.LAZY, optional = false) //
     @JoinColumn(name = "diary_id", nullable = false)
     private Diary diary;
 
