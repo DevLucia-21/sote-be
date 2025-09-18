@@ -11,8 +11,8 @@ public interface QuestionAnswerService {
     /** 작성만 가능(수정 불가). 같은 달 같은 질문에 이미 있으면 409 */
     QuestionAnswerDto.Response create(User user, Long questionId, QuestionAnswerDto.CreateRequest req);
 
-    /** 10분 이내에만 철회(삭제) 가능 */
-    void delete(User user, Long answerId);
+    /** 답변 수정 (10분 이내만 가능) */
+    QuestionAnswerDto.Response update(User user, Long answerId, QuestionAnswerDto.UpdateRequest req);
 
     /** 월별 내 답변 리스트 (fetch join) */
     List<QuestionAnswerDto.MonthlyItem> getMyAnswersForMonth(User user, YearMonth ym);

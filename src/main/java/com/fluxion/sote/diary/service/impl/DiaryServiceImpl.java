@@ -7,6 +7,7 @@ import com.fluxion.sote.diary.entity.WriteType;
 import com.fluxion.sote.diary.repository.DiaryRepository;
 import com.fluxion.sote.diary.service.DiaryService;
 import com.fluxion.sote.global.enums.EmotionType;
+import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.user.entity.Keyword;
 import com.fluxion.sote.user.repository.KeywordRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,22 @@ public class DiaryServiceImpl implements DiaryService {
     private final DiaryRepository diaryRepo;
     private final KeywordRepository keywordRepository;
 
+    /**
+     * 공통: 사용자 소유 키워드만 필터링
+     */
+    private Set<Keyword> validateAndGetKeywords(User user, List<Long> keywordIds) {
+        if (keywordIds == null || keywordIds.isEmpty()) {
+            return Set.of();
+        }
+
+        List<Keyword> keywords = keywordRepository.findAllByIdInAndUser(keywordIds, user);
+        if (keywords.size() != keywordIds.size()) {
+            throw new IllegalArgumentException("자신의 키워드만 선택할 수 있습니다.");
+        }
+
+        return Set.copyOf(keywords);
+    }
+
     // ================== TEXT / STT 저장 ==================
     @Override
     @Transactional
@@ -39,15 +56,13 @@ public class DiaryServiceImpl implements DiaryService {
             throw new IllegalArgumentException("이미 작성한 일기가 있습니다.");
         });
 
-        Set<Keyword> keywords = (keywordIds == null || keywordIds.isEmpty())
-                ? Set.of()
-                : keywordRepository.findAllById(keywordIds).stream().collect(Collectors.toSet());
+        Set<Keyword> keywords = validateAndGetKeywords(user, keywordIds);
 
         Diary diary = Diary.builder()
                 .user(user)
                 .date(date)
                 .content(content)
-                .writeType(writeType)     // TEXT 또는 STT
+                .writeType(writeType)
                 .emotionType(emotionType)
                 .keywords(keywords)
                 .build();
@@ -77,9 +92,7 @@ public class DiaryServiceImpl implements DiaryService {
             throw new IllegalArgumentException("이미 작성한 일기가 있습니다.");
         });
 
-        Set<Keyword> keywords = (keywordIds == null || keywordIds.isEmpty())
-                ? Set.of()
-                : keywordRepository.findAllById(keywordIds).stream().collect(Collectors.toSet());
+        Set<Keyword> keywords = validateAndGetKeywords(user, keywordIds);
 
         Diary diary = Diary.builder()
                 .user(user)
@@ -106,13 +119,13 @@ public class DiaryServiceImpl implements DiaryService {
         }
 
         Diary diary = diaryRepo.findByUserAndDate(user, date)
-                .orElseThrow(() -> new IllegalArgumentException("해당 날짜의 일기가 존재하지 않습니다."));
+                .orElseThrow(() -> new ResourceNotFoundException("해당 날짜의 일기가 존재하지 않습니다."));
 
         diary.setContent(content);
         diary.setEmotionType(emotionType);
 
         if (keywordIds != null) {
-            Set<Keyword> keywords = keywordRepository.findAllById(keywordIds).stream().collect(Collectors.toSet());
+            Set<Keyword> keywords = validateAndGetKeywords(user, keywordIds);
             diary.setKeywords(keywords);
         }
 
@@ -124,7 +137,7 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public void delete(User user, LocalDate date) {
         Diary diary = diaryRepo.findByUserAndDate(user, date)
-                .orElseThrow(() -> new IllegalArgumentException("일기가 없습니다."));
+                .orElseThrow(() -> new ResourceNotFoundException("해당 날짜의 일기가 존재하지 않습니다."));
         diaryRepo.delete(diary);
     }
 
@@ -133,8 +146,15 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional(readOnly = true)
     public DiaryDto getByDate(User user, LocalDate date) {
         Diary diary = diaryRepo.findByUserAndDate(user, date)
-                .orElseThrow(() -> new IllegalArgumentException("일기가 없습니다."));
+                .orElseThrow(() -> new ResourceNotFoundException("해당 날짜의 일기가 존재하지 않습니다."));
         return toDto(diary);
+    }
+
+    // ================== 오늘 일기 여부 확인 ==================
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByDate(User user, LocalDate date) {
+        return diaryRepo.findByUserAndDate(user, date).isPresent();
     }
 
     // ================== 기간 조회 ==================
@@ -151,7 +171,10 @@ public class DiaryServiceImpl implements DiaryService {
     @Override
     @Transactional(readOnly = true)
     public List<DiaryDto> getByKeyword(User user, Long keywordId) {
-        return diaryRepo.findByUserAndKeywordId(user, keywordId)
+        Keyword keyword = keywordRepository.findByIdAndUser(keywordId, user)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 키워드를 찾을 수 없습니다."));
+
+        return diaryRepo.findAllByUserAndKeywordsContaining(user, keyword)
                 .stream()
                 .map(this::toDto)
                 .toList();

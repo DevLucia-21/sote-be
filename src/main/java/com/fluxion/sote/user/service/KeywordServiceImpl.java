@@ -1,4 +1,3 @@
-// src/main/java/com/fluxion/sote/user/service/KeywordServiceImpl.java
 package com.fluxion.sote.user.service;
 
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
@@ -6,6 +5,7 @@ import com.fluxion.sote.global.util.SecurityUtil;
 import com.fluxion.sote.user.dto.KeywordResponse;
 import com.fluxion.sote.user.entity.Keyword;
 import com.fluxion.sote.user.repository.KeywordRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,13 +13,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class KeywordServiceImpl implements KeywordService {
 
     private final KeywordRepository keywordRepo;
-
-    public KeywordServiceImpl(KeywordRepository keywordRepo) {
-        this.keywordRepo = keywordRepo;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -45,11 +42,8 @@ public class KeywordServiceImpl implements KeywordService {
     @Transactional
     public void deleteKeyword(Long keywordId) {
         var user = SecurityUtil.getCurrentUser();
-        Keyword keyword = keywordRepo.findById(keywordId)
+        Keyword keyword = keywordRepo.findByIdAndUser(keywordId, user)
                 .orElseThrow(() -> new ResourceNotFoundException("키워드를 찾을 수 없습니다."));
-        if (!keyword.getUser().getId().equals(user.getId())) {
-            throw new IllegalArgumentException("자신의 키워드만 삭제할 수 있습니다.");
-        }
         keywordRepo.delete(keyword);
     }
 }

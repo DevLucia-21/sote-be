@@ -74,6 +74,15 @@ public class DiaryController {
         return ResponseEntity.ok().build();
     }
 
+    /** 오늘 일기 여부 확인 */
+    @GetMapping("/today/exist")
+    public ResponseEntity<Boolean> checkTodayDiary() {
+        User user = getCurrentUser();
+        boolean exists = diaryService.existsByDate(user, LocalDate.now());
+        return ResponseEntity.ok(exists);
+    }
+
+
     @GetMapping(params = "date")
     public ResponseEntity<DiaryDto> getByDate(@RequestParam("date")
                                               @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)

@@ -7,16 +7,19 @@ import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.question.entity.Question;
 import com.fluxion.sote.question.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import java.util.stream.Collectors;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -26,7 +29,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
     private final QuestionAnswerRepository answerRepository;
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
-    private static final Duration RETRACT_WINDOW = Duration.ofMinutes(10);
+    private static final Duration UPDATE_WINDOW = Duration.ofMinutes(10);
     private static final DateTimeFormatter YM_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private LocalDate toMonthFirstDay(YearMonth ym) {
@@ -57,40 +60,58 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
                         .user(user)
                         .question(q)
                         .answerText(req.getAnswerText())
-                        .answeredAt(LocalDateTime.now(ZONE))   // 타임존 고정
+                        .answeredAt(OffsetDateTime.now(ZONE))   // ✅ OffsetDateTime 사용
                         .answerMonth(monthFirst)
                         .build()
         );
 
-        return QuestionAnswerDto.Response.builder()
-                .id(saved.getId())
-                .questionId(q.getId())
-                .questionContent(q.getContent())
-                .questionDay(q.getId().intValue())
-                .answerText(saved.getAnswerText())
-                .answeredAt(saved.getAnsweredAt())
-                .answerMonth(saved.getAnswerMonth())
-                .build();
+        return toResponse(saved, q);
     }
 
     @Override
-    public void delete(User user, Long answerId) {
+    public QuestionAnswerDto.Response update(User user, Long answerId, QuestionAnswerDto.UpdateRequest req) {
+        log.info("🚀 [update] 요청 들어옴 :: answerId={}, currentUserId={}", answerId, user.getId());
+
         QuestionAnswer a = answerRepository.findById(answerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "답변을 찾을 수 없습니다."));
 
-        // 본인만 삭제 가능
-        if (!a.getUser().getId().equals(user.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 답변만 철회할 수 있습니다.");
-        }
-
-        // 10분 이내 철회만 허용
-        LocalDateTime now = LocalDateTime.now(ZONE);
+        OffsetDateTime now = OffsetDateTime.now(ZONE);
         Duration elapsed = Duration.between(a.getAnsweredAt(), now);
-        if (elapsed.compareTo(RETRACT_WINDOW) > 0) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "작성 후 10분이 지나 철회할 수 없습니다.");
+
+        // 작성자 디버깅 로그
+        log.info("👤 [User Debug] answerId={}, a.user.class={}, a.user.id={}, currentUser.class={}, currentUser.id={}",
+                a.getId(),
+                a.getUser().getClass().getName(),
+                a.getUser().getId(),
+                user.getClass().getName(),
+                user.getId()
+        );
+
+        // 작성자 체크 (id만 비교)
+        if (!Objects.equals(a.getUser().getId(), user.getId())) {
+            log.warn("❌ 작성자 불일치 :: answerUserId={} != currentUserId={}",
+                    a.getUser().getId(), user.getId());
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 답변만 수정할 수 있습니다.");
         }
 
-        answerRepository.delete(a);
+        // 시간 체크
+        log.info("⏰ [Time Check] answerId={}, answeredAt={}, now={}, elapsed={}s (limit={}s)",
+                a.getId(), a.getAnsweredAt(), now, elapsed.toSeconds(), UPDATE_WINDOW.getSeconds());
+
+        if (elapsed.compareTo(UPDATE_WINDOW) > 0) {
+            log.warn("❌ 수정 제한 초과 :: answerId={}, elapsed={}s > {}s",
+                    a.getId(), elapsed.toSeconds(), UPDATE_WINDOW.getSeconds());
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "작성 후 10분이 지나 수정할 수 없습니다.");
+        }
+
+        // 수정 적용
+        a.setAnswerText(req.getAnswerText());
+        a.setUpdatedAt(now);
+
+        QuestionAnswer saved = answerRepository.save(a);
+        log.info("✅ [update] 성공 :: answerId={}, userId={}", saved.getId(), user.getId());
+
+        return toResponse(saved, saved.getQuestion());
     }
 
     @Override
@@ -104,19 +125,32 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
                         .answerId(a.getId())
                         .questionId(a.getQuestion().getId())
                         .questionContent(a.getQuestion().getContent())
-                        .questionDay(a.getQuestion().getId().intValue()) // id를 날짜처럼 사용
+                        .questionDay(a.getQuestion().getId().intValue())
                         .answerText(a.getAnswerText())
                         .answeredAt(a.getAnsweredAt())
+                        .updatedAt(a.getUpdatedAt())
                         .date(a.getAnsweredAt().toLocalDate())
                         .build())
-                .collect(Collectors.toList());                     // ✅ 제네릭 명확화
+                .collect(Collectors.toList());
     }
-
 
     @Override
     @Transactional(readOnly = true)
     public boolean existsForMeThisMonth(User user, Long questionId, YearMonth ym) {
         LocalDate monthFirst = toMonthFirstDay(ym);
         return answerRepository.existsByUserIdAndQuestionIdAndAnswerMonth(user.getId(), questionId, monthFirst);
+    }
+
+    private QuestionAnswerDto.Response toResponse(QuestionAnswer entity, Question q) {
+        return QuestionAnswerDto.Response.builder()
+                .id(entity.getId())
+                .questionId(q.getId())
+                .questionContent(q.getContent())
+                .questionDay(q.getId().intValue())
+                .answerText(entity.getAnswerText())
+                .answeredAt(entity.getAnsweredAt())
+                .answerMonth(entity.getAnswerMonth())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
     }
 }

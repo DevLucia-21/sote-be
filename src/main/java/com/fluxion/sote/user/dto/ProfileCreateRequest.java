@@ -1,37 +1,40 @@
-// src/main/java/com/fluxion/sote/user/dto/ProfileUpdateRequest.java
+// src/main/java/com/fluxion/sote/user/dto/ProfileCreateRequest.java
 package com.fluxion.sote.user.dto;
 
 import com.fluxion.sote.global.enums.InstrumentType;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.util.Set;
 
 /**
- * 내 프로필 수정 요청 DTO
- * - 닉네임, 캐릭터(악기), 생년월일, 이미지, 음악 취향 수정 가능
- * - null 값은 "변경 없음" 의미
- * - profileImageUrl: ""(빈 문자열) 이면 해제 처리
- * - genreIds: [] → 모두 제거, 값 있음 → 교체
+ * 내 프로필 최초 생성 요청 DTO
+ * - 회원가입 이후 기본 프로필 저장 시 사용
+ * - 모든 값이 필수
  */
-public class ProfileUpdateRequest {
+public class ProfileCreateRequest {
 
+    @NotNull(message = "닉네임은 필수입니다.")
     @Size(max = 10, message = "닉네임은 최대 10자까지 가능합니다.")
-    private String nickname;               // null이면 변경 없음
+    private String nickname;
 
-    private InstrumentType character;      // null이면 변경 없음
+    @NotNull(message = "캐릭터(악기)는 필수입니다.")
+    private InstrumentType character;
 
-    private LocalDate birthDate;           // null이면 변경 없음
+    @NotNull(message = "생년월일은 필수입니다.")
+    private LocalDate birthDate;
 
     @Size(max = 2048, message = "이미지 URL이 너무 깁니다.")
-    private String profileImageUrl;        // null이면 변경 없음, ""로 보내면 해제 처리
+    private String profileImageUrl;   // 선택 가능
 
-    private Set<Integer> genreIds;         // null이면 변경 없음, [] → 모두 제거
+    @NotNull(message = "genreIds는 필수입니다.")
+    private Set<Integer> genreIds;    // 반드시 최소 [] 이상 전달 필요
 
     // ---------- 생성자 ----------
-    public ProfileUpdateRequest() {}
+    public ProfileCreateRequest() {}
 
-    public ProfileUpdateRequest(String nickname,
+    public ProfileCreateRequest(String nickname,
                                 InstrumentType character,
                                 LocalDate birthDate,
                                 String profileImageUrl,

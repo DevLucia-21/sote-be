@@ -3,6 +3,7 @@ package com.fluxion.sote.auth.controller;
 
 import com.fluxion.sote.auth.dto.LoginRequest;
 import com.fluxion.sote.auth.dto.SignupRequest;
+import com.fluxion.sote.auth.dto.TokenRequest;
 import com.fluxion.sote.auth.dto.TokenResponse;
 import com.fluxion.sote.auth.service.AuthService;
 import com.fluxion.sote.global.util.ResponseUtil;
@@ -32,13 +33,13 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<TokenResponse> refresh(@RequestBody String token) {
-        return ResponseUtil.ok(authService.refresh(token));
+    public ResponseEntity<TokenResponse> refresh(@RequestBody TokenRequest req) {
+        return ResponseUtil.ok(authService.refresh(req.getRefreshToken()));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody String token) {
-        authService.logout(token);
-        return ResponseUtil.ok();                  // 200 OK, no body
+    public ResponseEntity<Void> logout(@RequestBody TokenRequest req) {
+        authService.logout(req.getRefreshToken());
+        return ResponseUtil.ok();
     }
 }

@@ -21,7 +21,6 @@ import java.util.List;
 @RequestMapping("/api/questions")
 @RequiredArgsConstructor
 public class QuestionAnswerController {
-
     private final QuestionAnswerService answerService;
     private final AuthRepository authRepository;
 
@@ -32,7 +31,6 @@ public class QuestionAnswerController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 없습니다.");
         }
 
-        // 숫자면 userId로 조회, 아니면 email로 조회
         if (name.matches("\\d+")) {
             Long userId = Long.parseLong(name);
             return authRepository.findById(userId)
@@ -43,7 +41,7 @@ public class QuestionAnswerController {
         }
     }
 
-    /** 작성 (수정 없음). 이미 있으면 409 */
+    /** 작성 */
     @PostMapping("/{questionId}/answers")
     public QuestionAnswerDto.Response create(@PathVariable Long questionId,
                                              @RequestBody QuestionAnswerDto.CreateRequest req) {
@@ -51,14 +49,20 @@ public class QuestionAnswerController {
         return answerService.create(me, questionId, req);
     }
 
-    /** 10분 이내 철회(삭제) */
-    @DeleteMapping("/answers/{answerId}")
-    public void delete(@PathVariable Long answerId) {
+    /** 수정 (10분 이내만 가능) */
+    @PutMapping("/answers/{answerId}")
+    public QuestionAnswerDto.Response update(@PathVariable Long answerId,
+                                             @RequestBody QuestionAnswerDto.UpdateRequest req) {
+        System.out.println("🚀 Controller update() reached :: answerId=" + answerId);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("DEBUG >>> Controller update 호출됨, auth=" + auth);
+        System.out.println("DEBUG >>> auth.getName()=" + (auth != null ? auth.getName() : null));
         User me = getCurrentUser();
-        answerService.delete(me, answerId);
+        System.out.println("DEBUG >>> Controller update 호출됨, answerId=" + answerId + ", currentUserId=" + me.getId());
+        return answerService.update(me, answerId, req);
     }
 
-    /** 월별 내 답변(질문 본문 포함, fetch join). 파라미터 없으면 서버 현재월(Asia/Seoul) */
+    /** 월별 내 답변(질문 본문 포함) */
     @GetMapping("/answers/me")
     public List<QuestionAnswerDto.MonthlyItem> myMonthlyAnswers(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
