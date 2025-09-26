@@ -179,6 +179,15 @@ public class DiaryServiceImpl implements DiaryService {
                 .map(this::toDto)
                 .toList();
     }
+    // ================== 키워드 텍스트 조회 ==================
+    @Override
+    @Transactional(readOnly = true)
+    public List<DiaryDto> getByKeywordText(User user, String keyword) {
+        return diaryRepo.findByKeywordText(user, keyword)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
 
     // ================== 공통 변환 메서드 ==================
     private DiaryDto toDto(Diary diary) {

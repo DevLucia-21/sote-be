@@ -104,4 +104,10 @@ public class DiaryController {
         User user = getCurrentUser();
         return ResponseEntity.ok(diaryService.getByKeyword(user, keywordId));
     }
+
+    @GetMapping("/keyword/search")
+    public ResponseEntity<List<DiaryDto>> getByKeywordText(@RequestParam String keyword) {
+        User user = getCurrentUser();
+        return ResponseEntity.ok(diaryService.getByKeywordText(user, keyword));
+    }
 }
