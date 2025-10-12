@@ -1,9 +1,11 @@
 package com.fluxion.sote.diary.service.impl;
 
+import com.fluxion.sote.analysis.service.AnalysisService;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.diary.dto.DiaryDto;
 import com.fluxion.sote.diary.entity.Diary;
 import com.fluxion.sote.diary.entity.WriteType;
+import com.fluxion.sote.diary.event.DiarySavedEvent;
 import com.fluxion.sote.diary.repository.DiaryRepository;
 import com.fluxion.sote.diary.service.DiaryService;
 import com.fluxion.sote.global.enums.EmotionType;
@@ -11,13 +13,13 @@ import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.user.entity.Keyword;
 import com.fluxion.sote.user.repository.KeywordRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,9 +27,11 @@ public class DiaryServiceImpl implements DiaryService {
 
     private final DiaryRepository diaryRepo;
     private final KeywordRepository keywordRepository;
+    private final AnalysisService analysisService;
+    private final ApplicationEventPublisher publisher;
 
     /**
-     * 공통: 사용자 소유 키워드만 필터링
+     * 사용자 소유 키워드만 검증
      */
     private Set<Keyword> validateAndGetKeywords(User user, List<Long> keywordIds) {
         if (keywordIds == null || keywordIds.isEmpty()) {
@@ -47,7 +51,6 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto write(User user, String content, LocalDate date,
                           WriteType writeType, List<Long> keywordIds, EmotionType emotionType) {
-        // 미래 날짜 금지
         if (date.isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
         }
@@ -67,11 +70,15 @@ public class DiaryServiceImpl implements DiaryService {
                 .keywords(keywords)
                 .build();
 
-        diaryRepo.save(diary);
+        diaryRepo.saveAndFlush(diary); // ID 확정
+
+        // 커밋 완료 후 자동 감정분석 실행 이벤트 발행
+        publisher.publishEvent(new DiarySavedEvent(diary));
+
         return toDto(diary);
     }
 
-    // ================== OCR 저장 (기존 시그니처: 호환용) ==================
+    // ================== OCR 저장 (호환용) ==================
     @Override
     @Transactional
     public DiaryDto writeOcr(User user, String content, String imageUrl, LocalDate date) {
@@ -83,7 +90,6 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto writeOcr(User user, String content, String imageUrl, LocalDate date,
                              List<Long> keywordIds, EmotionType emotionType) {
-        // 미래 날짜 금지
         if (date.isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
         }
@@ -98,13 +104,17 @@ public class DiaryServiceImpl implements DiaryService {
                 .user(user)
                 .date(date)
                 .content(content)
-                .writeType(WriteType.OCR)   // OCR 고정
-                .imageUrl(imageUrl)         // 이미지 URL 저장
-                .emotionType(emotionType)   // 선택 입력
+                .writeType(WriteType.OCR)
+                .imageUrl(imageUrl)
+                .emotionType(emotionType)
                 .keywords(keywords)
                 .build();
 
-        diaryRepo.save(diary);
+        diaryRepo.saveAndFlush(diary);
+
+        // ✅ 커밋 완료 후 자동 감정분석 실행 이벤트 발행
+        publisher.publishEvent(new DiarySavedEvent(diary));
+
         return toDto(diary);
     }
 
@@ -113,7 +123,6 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto update(User user, LocalDate date, String content,
                            List<Long> keywordIds, EmotionType emotionType) {
-        // 미래 날짜 금지
         if (date.isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("미래 일기는 수정할 수 없습니다.");
         }
@@ -128,6 +137,11 @@ public class DiaryServiceImpl implements DiaryService {
             Set<Keyword> keywords = validateAndGetKeywords(user, keywordIds);
             diary.setKeywords(keywords);
         }
+
+        diaryRepo.saveAndFlush(diary);
+
+        // ✅ 커밋 완료 후 자동 감정분석 실행 이벤트 발행
+        publisher.publishEvent(new DiarySavedEvent(diary));
 
         return toDto(diary);
     }
@@ -179,6 +193,7 @@ public class DiaryServiceImpl implements DiaryService {
                 .map(this::toDto)
                 .toList();
     }
+
     // ================== 키워드 텍스트 조회 ==================
     @Override
     @Transactional(readOnly = true)
@@ -189,7 +204,7 @@ public class DiaryServiceImpl implements DiaryService {
                 .toList();
     }
 
-    // ================== 공통 변환 메서드 ==================
+    // ================== DTO 변환 ==================
     private DiaryDto toDto(Diary diary) {
         List<String> keywords = diary.getKeywords().stream()
                 .map(Keyword::getContent)

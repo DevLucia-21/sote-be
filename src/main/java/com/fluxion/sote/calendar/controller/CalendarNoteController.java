@@ -16,6 +16,9 @@ public class CalendarNoteController {
 
     private final CalendarNoteService calendarNoteService;
 
+    /**
+     * 월별 조회
+     */
     @GetMapping("/{year}/{month}")
     public ResponseEntity<List<CalendarNoteDto>> getMonthlyNotes(
             @RequestAttribute("user") User user,
@@ -23,6 +26,34 @@ public class CalendarNoteController {
             @PathVariable int month
     ) {
         List<CalendarNoteDto> notes = calendarNoteService.getMonthlyNotes(user.getId(), year, month);
+        return ResponseEntity.ok(notes);
+    }
+
+    /**
+     * 하루 조회
+     */
+    @GetMapping("/{year}/{month}/{day}")
+    public ResponseEntity<CalendarNoteDto> getDailyNote(
+            @RequestAttribute("user") User user,
+            @PathVariable int year,
+            @PathVariable int month,
+            @PathVariable int day
+    ) {
+        CalendarNoteDto note = calendarNoteService.getDailyNote(user.getId(), year, month, day);
+        return ResponseEntity.ok(note);
+    }
+
+    /**
+     * 주간 조회
+     */
+    @GetMapping("/{year}/{month}/{day}/week")
+    public ResponseEntity<List<CalendarNoteDto>> getWeeklyNotes(
+            @RequestAttribute("user") User user,
+            @PathVariable int year,
+            @PathVariable int month,
+            @PathVariable int day
+    ) {
+        List<CalendarNoteDto> notes = calendarNoteService.getWeeklyNotes(user.getId(), year, month, day);
         return ResponseEntity.ok(notes);
     }
 }
