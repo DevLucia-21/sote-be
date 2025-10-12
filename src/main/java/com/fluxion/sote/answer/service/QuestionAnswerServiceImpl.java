@@ -60,7 +60,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
                         .user(user)
                         .question(q)
                         .answerText(req.getAnswerText())
-                        .answeredAt(OffsetDateTime.now(ZONE))   // ✅ OffsetDateTime 사용
+                        .answeredAt(OffsetDateTime.now(ZONE))   // OffsetDateTime 사용
                         .answerMonth(monthFirst)
                         .build()
         );
@@ -70,7 +70,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
 
     @Override
     public QuestionAnswerDto.Response update(User user, Long answerId, QuestionAnswerDto.UpdateRequest req) {
-        log.info("🚀 [update] 요청 들어옴 :: answerId={}, currentUserId={}", answerId, user.getId());
+        log.info("[update] 요청 들어옴 :: answerId={}, currentUserId={}", answerId, user.getId());
 
         QuestionAnswer a = answerRepository.findById(answerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "답변을 찾을 수 없습니다."));
@@ -89,17 +89,17 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
 
         // 작성자 체크 (id만 비교)
         if (!Objects.equals(a.getUser().getId(), user.getId())) {
-            log.warn("❌ 작성자 불일치 :: answerUserId={} != currentUserId={}",
+            log.warn("작성자 불일치 :: answerUserId={} != currentUserId={}",
                     a.getUser().getId(), user.getId());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 답변만 수정할 수 있습니다.");
         }
 
         // 시간 체크
-        log.info("⏰ [Time Check] answerId={}, answeredAt={}, now={}, elapsed={}s (limit={}s)",
+        log.info("[Time Check] answerId={}, answeredAt={}, now={}, elapsed={}s (limit={}s)",
                 a.getId(), a.getAnsweredAt(), now, elapsed.toSeconds(), UPDATE_WINDOW.getSeconds());
 
         if (elapsed.compareTo(UPDATE_WINDOW) > 0) {
-            log.warn("❌ 수정 제한 초과 :: answerId={}, elapsed={}s > {}s",
+            log.warn("수정 제한 초과 :: answerId={}, elapsed={}s > {}s",
                     a.getId(), elapsed.toSeconds(), UPDATE_WINDOW.getSeconds());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "작성 후 10분이 지나 수정할 수 없습니다.");
         }
@@ -109,7 +109,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
         a.setUpdatedAt(now);
 
         QuestionAnswer saved = answerRepository.save(a);
-        log.info("✅ [update] 성공 :: answerId={}, userId={}", saved.getId(), user.getId());
+        log.info("[update] 성공 :: answerId={}, userId={}", saved.getId(), user.getId());
 
         return toResponse(saved, saved.getQuestion());
     }
