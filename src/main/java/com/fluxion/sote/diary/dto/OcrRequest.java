@@ -10,20 +10,22 @@ import java.util.List;
 
 /**
  * OCR 결과 저장 요청 DTO
- * - 기본 필드: imageUrl, content, date
- * - 선택 필드: keywordIds, emotionType
- * - FastAPI 호환을 위해 text/diaryDate 별칭 허용
+ * - FastAPI가 보낼 JSON 필드명(text, diaryDate 등) 별칭 허용
+ * - userId를 명시적으로 받아 컨트롤러에서 User 로드
  */
 @Getter
 @Setter
 public class OcrRequest {
 
+    @JsonAlias({"user_id", "user"})   // FastAPI 쪽 호환 별칭
+    private Long userId;              // (컨트롤러에서 User 로드용)
+
     private String imageUrl;
 
-    @JsonAlias("text")          // FastAPI가 text로 보낼 때도 매핑
+    @JsonAlias("text")                // FastAPI가 text로 보낼 때 매핑
     private String content;
 
-    @JsonAlias("diaryDate")     // FastAPI가 diaryDate로 보낼 때도 매핑
+    @JsonAlias("diaryDate")           // FastAPI가 diaryDate로 보낼 때 매핑
     private LocalDate date;
 
     // 선택 입력

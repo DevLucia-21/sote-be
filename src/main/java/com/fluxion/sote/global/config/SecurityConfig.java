@@ -1,9 +1,10 @@
 package com.fluxion.sote.global.config;
 
 import com.fluxion.sote.global.config.JwtFilter;
-import com.fluxion.sote.global.util.JwtUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -11,84 +12,91 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.http.HttpMethod;
 
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
-    public SecurityConfig(JwtFilter jwtFilter) {
-        this.jwtFilter = jwtFilter;
-    }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                // CORS 처리: WebConfig에 등록된 CorsFilter 사용
-                .cors(Customizer.withDefaults())
+        http
+                /* ===== CORS: 운영 도메인만 허용(필요 시 추가/수정) ===== */
+                .cors(cors -> cors.configurationSource(request -> {
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.setAllowedOrigins(List.of(
+                            "https://sote.kr",
+                            "https://app.sote.kr",
+                            "https://fastapi.sote.kr",   // 내부 AI 서비스 도메인(예: FastAPI)
+                            "http://localhost:3000"      // 로컬 프론트(개발편의)
+                    ));
+                    config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
+                    config.setAllowedHeaders(List.of("*"));
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
 
-                // CSRF 비활성화
+                /* ===== CSRF: JWT 사용이므로 비활성화 ===== */
                 .csrf(csrf -> csrf.disable())
 
-                // JWT Stateless 세션 정책
-                .sessionManagement(sm ->
-                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                /* ===== 세션: 무상태 ===== */
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 인가 규칙
+                /* ===== 인가 규칙 ===== */
                 .authorizeHttpRequests(auth -> auth
+                        // Preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // 헬스체크(필수) / 루트(선택) : PaaS 라우터/모니터링용
+                        .requestMatchers("/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/").permitAll()
+
+                        // 인증 전 단계(회원/로그인/비번찾기 등)
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/**", "/health").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/genres", "/api/security-questions").permitAll()
-
                         .requestMatchers(HttpMethod.POST, "/api/users/find-email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/find-pwd").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/password-reset-temp").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/check-security").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/users/password").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/users/profile/image").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/users/profile/image").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/profile/image").authenticated()
-                        .requestMatchers("/api/users/keywords/**").authenticated()
 
-                        .requestMatchers("/api/settings/notifications/**").authenticated()
-                        .requestMatchers("/api/settings/theme/**").authenticated()
-                        .requestMatchers("/api/settings/token").permitAll()
-                        .requestMatchers("/api/settings/send").permitAll()
+                        // ===== 내부 서비스 간 통신(서버→서버) 결과 수신: 토큰 없음 → permitAll =====
+                        .requestMatchers(HttpMethod.POST, "/api/ocr/results").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/stt/results").permitAll()
 
-                        .requestMatchers(HttpMethod.POST, "/api/stt/results").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/stt/results/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/stt/results/**").authenticated()
-
-                        .requestMatchers(HttpMethod.POST, "/api/diaries").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/diaries").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/diaries").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/diaries").authenticated()
-
+                        // ===== 사용자 호출은 인증 필수 =====
+                        .requestMatchers(HttpMethod.POST, "/api/ocr/preview").authenticated() // 운영 기준: 프론트에서 토큰 전송 필수
+                        .requestMatchers("/api/diaries/**").authenticated()
+                        .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers("/api/settings/**").authenticated()
                         .requestMatchers("/api/analysis/**").authenticated()
                         .requestMatchers("/api/challenge/**").authenticated()
                         .requestMatchers("/api/statistics/**").authenticated()
-
                         .requestMatchers("/api/questions/**").authenticated()
+                        .requestMatchers("/api/stt/**").authenticated()
 
-
+                        // 그 외 전부 인증
                         .anyRequest().authenticated()
                 )
 
-                // JWT 필터를 스프링 시큐리티 필터 체인 앞단에 삽입
-                .addFilterBefore(
-                        jwtFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                )
+                /* ===== JWT 필터 체인 연결 ===== */
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-                .build();
+        /* ===== 보안 헤더(CSP/FrameOptions) ===== */
+        http.headers(headers -> {
+            // 운영 프론트/리소스 정책에 맞춰 필요 시 지시어 보강 가능
+            headers.contentSecurityPolicy(csp ->
+                    csp.policyDirectives("default-src 'self'")
+            );
+            headers.frameOptions(frame -> frame.sameOrigin());
+        });
+
+        return http.build();
     }
 
     @Bean
