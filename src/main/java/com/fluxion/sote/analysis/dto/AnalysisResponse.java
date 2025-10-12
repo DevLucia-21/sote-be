@@ -1,6 +1,7 @@
 package com.fluxion.sote.analysis.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fluxion.sote.global.enums.EmotionType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,8 +36,14 @@ public class AnalysisResponse {
                 data != null ? data : Collections.emptyMap());
     }
 
-    /** 에러 코드를 data.code로 넣는 헬퍼 (컨트롤러 매핑과 호환) */
-    public static AnalysisResponse errorWithCode(String code, String message) {
-        return new AnalysisResponse("error", message, Map.of("code", code));
+    /** 감정 타입 변환 편의 메서드 */
+    public EmotionType getEmotionType() {
+        if (data != null) {
+            Object label = data.get("emotionLabel");
+            if (label instanceof String s) {
+                return EmotionType.fromLabel(s);
+            }
+        }
+        return null;
     }
 }
