@@ -8,6 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * FastAPI ↔ Spring STT 결과 저장 컨트롤러
+ * - FastAPI 호출은 permitAll
+ * - 사용자 호출은 JWT 인증 필요
+ */
 @RestController
 @RequestMapping("/api/stt")
 @RequiredArgsConstructor
@@ -18,7 +23,7 @@ public class SttResultController {
 
     @PostMapping("/results")
     public ResponseEntity<Long> saveSttResult(@RequestBody SttResultRequest request) {
-        Long id = sttResultService.saveSttResult(request.getText());
+        Long id = sttResultService.saveSttResult(request.getUserId(), request.getText());
         return ResponseEntity.ok(id);
     }
 

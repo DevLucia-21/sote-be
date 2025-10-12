@@ -1,8 +1,5 @@
 package com.fluxion.sote.stt.service;
 
-import com.fluxion.sote.auth.entity.User;
-import com.fluxion.sote.global.exception.ForbiddenException;
-import com.fluxion.sote.global.util.SecurityUtil;
 import com.fluxion.sote.stt.entity.SttResult;
 import com.fluxion.sote.stt.repository.SttResultRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,30 +10,35 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+/**
+ * FastAPI 및 사용자용 STT 결과 서비스
+ * - FastAPI 호출은 userId 기반으로 처리
+ */
 @Service
 @RequiredArgsConstructor
 public class SttResultService {
 
     private final SttResultRepository sttResultRepository;
 
+    /**
+     * FastAPI → Spring 저장용
+     */
     @Transactional
-    public Long saveSttResult(String text) {
-        User user = SecurityUtil.getCurrentUser();
+    public Long saveSttResult(Long userId, String text) {
 
-        // 오늘 0시 ~ 23:59:59
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
         boolean exists = sttResultRepository.existsByUserIdAndCreatedAtBetween(
-                user.getId(), startOfDay, endOfDay
+                userId, startOfDay, endOfDay
         );
 
         if (exists) {
-            throw new ForbiddenException("오늘은 이미 STT를 실행했습니다. 하루 1회만 가능합니다.");
+            throw new IllegalStateException("오늘은 이미 STT를 실행했습니다. 하루 1회만 가능합니다.");
         }
 
         SttResult result = new SttResult();
-        result.setUserId(user.getId());
+        result.setUserId(userId);
         result.setText(text);
 
         return sttResultRepository.save(result).getId();
@@ -54,5 +56,4 @@ public class SttResultService {
         result.updateText(newText);
         sttResultRepository.save(result);
     }
-
 }
