@@ -27,4 +27,27 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
                                   @Param("keyword") String keyword);
 
     boolean existsByUserAndDate(User user, LocalDate date);
+
+    /** OR 조건 (하나라도 포함) */
+    @Query("""
+        SELECT DISTINCT d FROM Diary d
+        JOIN d.keywords k
+        WHERE d.user = :user
+          AND k.id IN :keywordIds
+    """)
+    List<Diary> findAllByUserAndKeywordsIn(@Param("user") User user,
+                                           @Param("keywordIds") List<Long> keywordIds);
+
+    /** AND 조건 (모두 포함) */
+    @Query("""
+        SELECT d FROM Diary d
+        JOIN d.keywords k
+        WHERE d.user = :user
+          AND k.id IN :keywordIds
+        GROUP BY d
+        HAVING COUNT(DISTINCT k.id) = :keywordCount
+    """)
+    List<Diary> findAllByUserAndAllKeywords(@Param("user") User user,
+                                            @Param("keywordIds") List<Long> keywordIds,
+                                            @Param("keywordCount") long keywordCount);
 }

@@ -31,6 +31,9 @@ public interface DiaryService {
     List<DiaryDto> getByKeyword(User user, Long keywordId);
 
     List<DiaryDto> getByKeywordText(User user, String keyword);
+
+    List<DiaryDto> getByKeywords(User user, List<Long> keywordIds, String mode);
+
     // 오늘 일기 여부 확인
     boolean existsByDate(User user, LocalDate date);
 }

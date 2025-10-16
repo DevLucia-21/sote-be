@@ -30,12 +30,16 @@ public class DiaryServiceImpl implements DiaryService {
     private final AnalysisService analysisService;
     private final ApplicationEventPublisher publisher;
 
-    /**
-     * 사용자 소유 키워드만 검증
-     */
+
+    //사용자 소유 키워드만 검증
+    //키워드 개수 제한: 작성 시 최대 5개
     private Set<Keyword> validateAndGetKeywords(User user, List<Long> keywordIds) {
         if (keywordIds == null || keywordIds.isEmpty()) {
             return Set.of();
+        }
+
+        if (keywordIds.size() > 5) {
+            throw new IllegalArgumentException("키워드는 최대 5개까지만 선택할 수 있습니다.");
         }
 
         List<Keyword> keywords = keywordRepository.findAllByIdInAndUser(keywordIds, user);
@@ -45,7 +49,6 @@ public class DiaryServiceImpl implements DiaryService {
 
         return Set.copyOf(keywords);
     }
-
     // ================== TEXT / STT 저장 ==================
     @Override
     @Transactional
@@ -112,7 +115,7 @@ public class DiaryServiceImpl implements DiaryService {
 
         diaryRepo.saveAndFlush(diary);
 
-        // ✅ 커밋 완료 후 자동 감정분석 실행 이벤트 발행
+        // 커밋 완료 후 자동 감정분석 실행 이벤트 발행
         publisher.publishEvent(new DiarySavedEvent(diary));
 
         return toDto(diary);
@@ -140,7 +143,7 @@ public class DiaryServiceImpl implements DiaryService {
 
         diaryRepo.saveAndFlush(diary);
 
-        // ✅ 커밋 완료 후 자동 감정분석 실행 이벤트 발행
+        // 커밋 완료 후 자동 감정분석 실행 이벤트 발행
         publisher.publishEvent(new DiarySavedEvent(diary));
 
         return toDto(diary);
@@ -200,6 +203,29 @@ public class DiaryServiceImpl implements DiaryService {
     public List<DiaryDto> getByKeywordText(User user, String keyword) {
         return diaryRepo.findByKeywordText(user, keyword)
                 .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    //다중 키워드 검색 (검색 시 최대 3개 제한)
+    @Override
+    @Transactional(readOnly = true)
+    public List<DiaryDto> getByKeywords(User user, List<Long> keywordIds, String mode) {
+        if (keywordIds == null || keywordIds.isEmpty()) {
+            throw new IllegalArgumentException("검색할 키워드가 없습니다.");
+        }
+        if (keywordIds.size() > 3) {
+            throw new IllegalArgumentException("검색은 최대 3개의 키워드까지만 가능합니다.");
+        }
+
+        List<Diary> diaries;
+        if ("and".equalsIgnoreCase(mode)) {
+            diaries = diaryRepo.findAllByUserAndAllKeywords(user, keywordIds, keywordIds.size());
+        } else {
+            diaries = diaryRepo.findAllByUserAndKeywordsIn(user, keywordIds);
+        }
+
+        return diaries.stream()
                 .map(this::toDto)
                 .toList();
     }

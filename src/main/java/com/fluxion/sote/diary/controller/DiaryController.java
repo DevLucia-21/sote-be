@@ -110,4 +110,16 @@ public class DiaryController {
         User user = getCurrentUser();
         return ResponseEntity.ok(diaryService.getByKeywordText(user, keyword));
     }
+
+    //다중 키워드 검색 (mode=any 또는 all)
+    @GetMapping("/keywords")
+    public ResponseEntity<List<DiaryDto>> getByMultipleKeywords(
+            @RequestParam("ids") List<Long> keywordIds,
+            @RequestParam(value = "mode", required = false, defaultValue = "any") String mode) {
+
+        User user = getCurrentUser();
+        List<DiaryDto> results = diaryService.getByKeywords(user, keywordIds, mode);
+        return ResponseEntity.ok(results);
+    }
+
 }
