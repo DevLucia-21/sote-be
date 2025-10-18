@@ -7,6 +7,7 @@ import com.fluxion.sote.diary.service.DiaryService;
 import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.SecurityUtil;
 import com.fluxion.sote.user.repository.UserRepository;
+import com.fluxion.sote.util.MultipartInputStreamFileResource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +29,7 @@ import java.util.Map;
  *  OCR 컨트롤러 (Spring ↔ FastAPI 연동)
  * - /api/ocr/preview : 사용자 → FastAPI OCR 호출 (JWT 필요)
  * - /api/ocr/results : FastAPI → Spring 일기 저장 (permitAll)
+ * - /api/ocr/upload  :프론트 → Spring → FastAPI OCR 호출 (JWT 자동처리)
  */
 @RestController
 @RequestMapping("/api/ocr")
@@ -77,7 +80,44 @@ public class OcrController {
 
         return ResponseEntity.ok(response);
     }
+    // ====================================================
+    // (2) 신규: 프론트 → Spring → FastAPI OCR 프록시 (자동 uid)
+    // ====================================================
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, Object>> uploadOcr(
+            @RequestParam("file") MultipartFile file) throws IOException {
 
+        // 로그인된 사용자 ID 자동 추출
+        User user = SecurityUtil.getCurrentUser();
+        Long userId = user.getId();
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        // FastAPI로 전송할 FormData 구성
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new MultipartInputStreamFileResource(file.getInputStream(), file.getOriginalFilename()));
+        body.add("user_id", userId);
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        // FastAPI로 OCR 요청
+        ResponseEntity<Map> fastApiResponse = restTemplate.postForEntity(fastApiOcrUrl, requestEntity, Map.class);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", userId);
+        response.put("text", fastApiResponse.getBody().get("content"));
+        response.put("imageUrl", fastApiResponse.getBody().get("imageUrl"));
+        response.put("status", "ok");
+
+        log.info("[OCR 자동화 완료] userId={}, file={}, textLength={}",
+                userId, file.getOriginalFilename(), fastApiResponse.getBody().get("text") != null
+                        ? fastApiResponse.getBody().get("text").toString().length()
+                        : 0);
+
+        return ResponseEntity.ok(response);
+    }
 
     /**
      * MultipartFile → File 변환 (임시 저장)
