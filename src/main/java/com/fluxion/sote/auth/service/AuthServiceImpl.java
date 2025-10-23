@@ -88,7 +88,8 @@ public class AuthServiceImpl implements AuthService {
                 TimeUnit.MILLISECONDS
         );
 
-        return new TokenResponse(access, refresh, jwtUtil.getAccessExpiry());
+        // userId 포함하여 반환
+        return new TokenResponse(access, refresh, jwtUtil.getAccessExpiry(), user.getId());
     }
 
     @Override
@@ -120,8 +121,10 @@ public class AuthServiceImpl implements AuthService {
                 TimeUnit.MILLISECONDS
         );
 
-        return new TokenResponse(newAccess, newRefresh, jwtUtil.getAccessExpiry());
+        // refresh 응답에도 userId 포함
+        return new TokenResponse(newAccess, newRefresh, jwtUtil.getAccessExpiry(), user.getId());
     }
+
 
     @Override
     public void logout(String refreshToken) {
