@@ -62,7 +62,7 @@ public class SttResultService {
     @Transactional
     public void updateSttResult(Long id, String newText) {
         SttResult result = getSttResult(id);
-        result.setText(newText); // 수정 로직 누락된 부분 복원
+        result.setText(newText);
         sttResultRepository.save(result);
     }
 }
