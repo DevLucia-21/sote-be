@@ -23,6 +23,13 @@ public class HealthController {
         return ResponseEntity.ok(response);
     }
 
+    // ✅ 신규: 배치 저장 (최대 100건)
+    @PostMapping("/save/bulk")
+    public ResponseEntity<List<HealthResponse>> saveHealthBulk(@RequestBody List<HealthRequest> requests) {
+        List<HealthResponse> responses = healthService.saveHealthDataBulk(requests);
+        return ResponseEntity.ok(responses);
+    }
+
     @GetMapping("/today")
     public ResponseEntity<HealthResponse> getToday(@RequestParam Long userId) {
         HealthResponse response = healthService.getTodayHealth(userId);

@@ -11,9 +11,15 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "health_data", indexes = {
-        @Index(name = "idx_user_measured_at", columnList = "user_id, measured_at")
-})
+@Table(
+        name = "health_data",
+        indexes = {
+                @Index(name = "idx_user_measured_at", columnList = "user_id, measured_at")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_user_measured_at", columnNames = {"user_id", "measured_at"})
+        }
+)
 public class HealthData extends BaseEntity {
 
     @Id

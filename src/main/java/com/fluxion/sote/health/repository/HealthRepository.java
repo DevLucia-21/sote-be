@@ -11,21 +11,28 @@ import java.util.Optional;
 
 public interface HealthRepository extends JpaRepository<HealthData, Long> {
 
-    @Query("SELECT h FROM HealthData h " +
-            "WHERE h.userId = :userId AND h.measuredAt BETWEEN :startOfDay AND :endOfDay " +
-            "ORDER BY h.measuredAt DESC LIMIT 1")
-    Optional<HealthData> findTodayLatestData(
-            @Param("userId") Long userId,
-            @Param("startOfDay") LocalDateTime startOfDay,
-            @Param("endOfDay") LocalDateTime endOfDay
+    // 오늘 최신 1건
+    Optional<HealthData> findTopByUserIdAndMeasuredAtBetweenOrderByMeasuredAtDesc(
+            Long userId,
+            LocalDateTime startOfDay,
+            LocalDateTime endOfDay
     );
 
-    // 일별 평균값 계산용
-    @Query("SELECT DATE(h.measuredAt) AS date, " +
-            "AVG(h.heartRate), AVG(h.hrv), AVG(h.steps) " +
-            "FROM HealthData h " +
-            "WHERE h.userId = :userId AND h.measuredAt >= :startDate " +
-            "GROUP BY DATE(h.measuredAt) ORDER BY DATE(h.measuredAt)")
-    List<Object[]> findAveragesSince(@Param("userId") Long userId,
-                                     @Param("startDate") LocalDateTime startDate);
+    // 멱등 저장을 위한 키 조회
+    Optional<HealthData> findByUserIdAndMeasuredAt(Long userId, LocalDateTime measuredAt);
+
+    // 일자별 평균 (네이티브)
+    @Query(value = """
+        SELECT DATE(measured_at)   AS d,
+               AVG(heart_rate)     AS avg_hr,
+               AVG(hrv)            AS avg_hrv,
+               AVG(steps)          AS avg_steps
+          FROM health_data
+         WHERE user_id = :userId
+           AND measured_at >= :startDate
+         GROUP BY DATE(measured_at)
+         ORDER BY DATE(measured_at)
+        """, nativeQuery = true)
+    List<Object[]> findAveragesSinceNative(@Param("userId") Long userId,
+                                           @Param("startDate") LocalDateTime startDate);
 }

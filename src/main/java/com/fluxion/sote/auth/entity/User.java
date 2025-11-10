@@ -1,23 +1,23 @@
+// src/main/java/com/fluxion/sote/auth/entity/User.java
 package com.fluxion.sote.auth.entity;
 
 import com.fluxion.sote.global.enums.InstrumentType;
 import com.fluxion.sote.setting.entity.FcmToken;
 import com.fluxion.sote.setting.enums.NotificationType;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -37,10 +37,6 @@ public class User {
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
-    /**
-     * 유저 ↔ 장르 다대다 매핑
-     * user_genres 조인 테이블을 통해 Genre 엔티티와 연결
-     */
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_genres",
@@ -71,22 +67,24 @@ public class User {
     @Column(name = "notification_type")
     private Set<NotificationType> enabledNotifications = new HashSet<>();
 
+    /**
+     * 유저 ↔ FcmToken (1:N)
+     * cascade + orphanRemoval로 User 삭제 시 관련 토큰 자동 제거
+     */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FcmToken> fcmTokens = new ArrayList<>();
 
-    // 중복 방지 토큰 추가
+    //중복 방지 + 양방향 관계 유지
     public void addFcmToken(FcmToken token) {
         boolean exists = fcmTokens.stream()
                 .anyMatch(t -> t.getToken().equals(token.getToken()));
         if (!exists) {
-            fcmTokens.add(token);
-            token.setUser(this);
+            token.setUser(this); // 자동으로 fcmTokens에도 추가됨
         }
     }
 
-    // 토큰 제거
+    // 토큰 제거 (양방향 관계 해제)
     public void removeFcmToken(FcmToken token) {
-        fcmTokens.remove(token);
-        token.setUser(null);
+        token.setUser(null); // setUser에서 fcmTokens.remove(this)까지 처리됨
     }
 }

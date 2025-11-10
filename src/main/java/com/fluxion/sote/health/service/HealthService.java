@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface HealthService {
     HealthResponse saveHealthData(HealthRequest request);
+    List<HealthResponse> saveHealthDataBulk(List<HealthRequest> requests);
+
     HealthResponse getTodayHealth(Long userId);
     List<HealthSummaryResponse> getSummary(Long userId, String period);
 }
