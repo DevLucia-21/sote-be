@@ -27,7 +27,7 @@ public interface ProfileService {
      * 로그인한 사용자의 프로필 이미지 업로드/변경
      * @param image MultipartFile
      */
-    void updateProfileImage(MultipartFile image);
+    String updateProfileImage(MultipartFile image);
 
     /**
      * 로그인한 사용자의 프로필 이미지 삭제

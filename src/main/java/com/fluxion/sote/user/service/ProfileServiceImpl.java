@@ -1,23 +1,22 @@
-// src/main/java/com/fluxion/sote/user/service/ProfileServiceImpl.java
 package com.fluxion.sote.user.service;
 
 import com.fluxion.sote.auth.entity.Genre;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.auth.repository.GenreRepository;
-import com.fluxion.sote.global.exception.ResourceNotFoundException;
 import com.fluxion.sote.global.util.SecurityUtil;
 import com.fluxion.sote.user.dto.ProfileResponse;
 import com.fluxion.sote.user.dto.ProfileUpdateRequest;
 import com.fluxion.sote.user.repository.UserRepository;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,10 +24,15 @@ import java.util.stream.Collectors;
 public class ProfileServiceImpl implements ProfileService {
 
     private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024; // 5MB
+    private static final String BUCKET_NAME = "sote-profile-image";
 
     private final UserRepository userRepository;
     private final GenreRepository genreRepository;
+    private final Storage storage;
 
+    // ==============================
+    // 프로필 조회
+    // ==============================
     @Override
     @Transactional(readOnly = true)
     public ProfileResponse getMyProfile() {
@@ -36,36 +40,22 @@ public class ProfileServiceImpl implements ProfileService {
         return toResponse(user);
     }
 
+    // ==============================
+    // 프로필 기본정보 수정
+    // ==============================
     @Override
     @Transactional
     public ProfileResponse updateMyProfile(ProfileUpdateRequest request) {
         User user = SecurityUtil.getCurrentUser();
 
-        // 닉네임
-        if (request.getNickname() != null) {
-            user.setNickname(request.getNickname());
-        }
+        if (request.getNickname() != null) user.setNickname(request.getNickname());
+        if (request.getCharacter() != null) user.setCharacter(request.getCharacter());
+        if (request.getBirthDate() != null) user.setBirthDate(request.getBirthDate());
 
-        // 캐릭터(악기)
-        if (request.getCharacter() != null) {
-            user.setCharacter(request.getCharacter());
-        }
-
-        // 생년월일
-        if (request.getBirthDate() != null) {
-            user.setBirthDate(request.getBirthDate());
-        }
-
-        // 이미지 URL
         if (request.getProfileImageUrl() != null) {
-            if (request.getProfileImageUrl().isEmpty()) {
-                user.setProfileImageUrl(null); // "" 이면 해제 처리
-            } else {
-                user.setProfileImageUrl(request.getProfileImageUrl());
-            }
+            user.setProfileImageUrl(request.getProfileImageUrl().isEmpty() ? null : request.getProfileImageUrl());
         }
 
-        // 음악 취향
         Set<Integer> genreIds = request.getGenreIds();
         if (genreIds != null) {
             var genres = new HashSet<>(genreRepository.findAllById(genreIds));
@@ -76,63 +66,97 @@ public class ProfileServiceImpl implements ProfileService {
         return toResponse(user);
     }
 
+    // ==============================
+    // 프로필 이미지 업로드/변경 (GCS)
+    // ==============================
     @Override
     @Transactional
-    public void updateProfileImage(MultipartFile image) {
-        if (image == null || image.isEmpty()) {
-            throw new RuntimeException("프로필 이미지가 비어 있습니다.");
-        }
-        if (image.getSize() > MAX_IMAGE_BYTES) {
-            throw new RuntimeException("프로필 이미지가 허용 용량(5MB)을 초과했습니다.");
-        }
+    public String updateProfileImage(MultipartFile image) {
+        if (image == null || image.isEmpty()) throw new RuntimeException("프로필 이미지가 비어 있습니다.");
+        if (image.getSize() > MAX_IMAGE_BYTES) throw new RuntimeException("허용 용량(5MB)을 초과했습니다.");
 
         String contentType = image.getContentType();
         if (contentType != null &&
-                !(contentType.equalsIgnoreCase("image/jpeg")
-                        || contentType.equalsIgnoreCase("image/png"))) {
-            throw new RuntimeException("허용되지 않는 이미지 유형입니다. (jpeg/png만 허용)");
+                !(contentType.equalsIgnoreCase("image/jpeg") || contentType.equalsIgnoreCase("image/png"))) {
+            throw new RuntimeException("jpeg/png만 허용됩니다.");
         }
 
         User user = SecurityUtil.getCurrentUser();
+
+        // 기존 이미지 삭제 (기존 URL 있으면 GCS에서 제거)
+        deleteImageFromGcs(user.getProfileImageUrl());
+
+        // 고유 파일명 생성
+        String ext = getExtension(image.getOriginalFilename());
+        String fileName = "profile_" + user.getId() + "_" + UUID.randomUUID() + ext;
+
         try {
-            user.setProfileImage(image.getBytes());
+            BlobId blobId = BlobId.of(BUCKET_NAME, fileName);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                    .setContentType(image.getContentType())
+                    .build();
+
+            storage.create(blobInfo, image.getBytes());
+
+            // 공개 URL 생성
+            String publicUrl = String.format("https://storage.googleapis.com/%s/%s", BUCKET_NAME, fileName);
+
+            // DB에 URL 저장
+            user.setProfileImageUrl(publicUrl);
             userRepository.save(user);
+
+            // 컨트롤러에 URL 반환
+            return publicUrl;
+
         } catch (IOException e) {
-            throw new RuntimeException("프로필 이미지 저장 실패", e);
+            throw new RuntimeException("프로필 이미지 업로드 실패", e);
         }
     }
 
+    // ==============================
+    // 프로필 이미지 삭제
+    // ==============================
     @Override
     @Transactional
     public void deleteProfileImage() {
         User user = SecurityUtil.getCurrentUser();
-        user.setProfileImage(null);
+        deleteImageFromGcs(user.getProfileImageUrl());
+        user.setProfileImageUrl(null);
         userRepository.save(user);
     }
 
+    private void deleteImageFromGcs(String imageUrl) {
+        if (imageUrl == null || !imageUrl.contains("/")) return;
+        String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+        storage.delete(BlobId.of(BUCKET_NAME, fileName));
+    }
+
+    // ==============================
+    // GCS 이미지 조회 (옵션)
+    // ==============================
     @Override
     @Transactional(readOnly = true)
     public byte[] loadMyProfileImage() {
         User user = SecurityUtil.getCurrentUser();
-        byte[] data = user.getProfileImage();
-        if (data == null || data.length == 0) {
-            throw new RuntimeException("프로필 이미지가 없습니다.");
-        }
-        return data;
+        if (user.getProfileImageUrl() == null) throw new RuntimeException("프로필 이미지가 없습니다.");
+
+        String fileName = user.getProfileImageUrl().substring(user.getProfileImageUrl().lastIndexOf("/") + 1);
+        return storage.readAllBytes(BlobId.of(BUCKET_NAME, fileName));
     }
 
     @Override
     @Transactional(readOnly = true)
     public String getMyProfileImageContentType() {
         User user = SecurityUtil.getCurrentUser();
-        byte[] data = user.getProfileImage();
-        if (data == null || data.length == 0) {
-            return "application/octet-stream";
-        }
-        return detectContentType(data);
+        if (user.getProfileImageUrl() == null) return "application/octet-stream";
+        String fileName = user.getProfileImageUrl().substring(user.getProfileImageUrl().lastIndexOf("/") + 1);
+        var blob = storage.get(BlobId.of(BUCKET_NAME, fileName));
+        return blob != null ? blob.getContentType() : "application/octet-stream";
     }
 
-    // ---- helpers ----
+    // ==============================
+    // 헬퍼 메서드
+    // ==============================
     private ProfileResponse toResponse(User user) {
         int totalDiaryCount = 0;
         List<String> savedImages = List.of();
@@ -141,13 +165,8 @@ public class ProfileServiceImpl implements ProfileService {
                 .map(Genre::getId)
                 .collect(Collectors.toSet());
 
-        boolean hasBinary = user.getProfileImage() != null && user.getProfileImage().length > 0;
-        boolean hasUrl = user.getProfileImageUrl() != null && !user.getProfileImageUrl().isBlank();
-
-        boolean hasProfileImage = hasBinary || hasUrl;
+        boolean hasProfileImage = user.getProfileImageUrl() != null && !user.getProfileImageUrl().isBlank();
         String binaryEndpoint = "/api/users/profile/image";
-
-        String legacyUrl = hasUrl ? user.getProfileImageUrl() : (hasBinary ? binaryEndpoint : null);
 
         return new ProfileResponse(
                 user.getEmail(),
@@ -156,31 +175,17 @@ public class ProfileServiceImpl implements ProfileService {
                 user.getBirthDate(),
                 hasProfileImage,
                 binaryEndpoint,
-                legacyUrl,
+                user.getProfileImageUrl(),
                 totalDiaryCount,
                 savedImages,
                 genreIds
         );
     }
 
-    private String detectContentType(byte[] bytes) {
-        if (bytes.length >= 8
-                && (bytes[0] & 0xFF) == 0x89
-                && (bytes[1] & 0xFF) == 0x50
-                && (bytes[2] & 0xFF) == 0x4E
-                && (bytes[3] & 0xFF) == 0x47
-                && (bytes[4] & 0xFF) == 0x0D
-                && (bytes[5] & 0xFF) == 0x0A
-                && (bytes[6] & 0xFF) == 0x1A
-                && (bytes[7] & 0xFF) == 0x0A) {
-            return "image/png";
+    private String getExtension(String filename) {
+        if (filename != null && filename.contains(".")) {
+            return filename.substring(filename.lastIndexOf('.'));
         }
-        if (bytes.length >= 3
-                && (bytes[0] & 0xFF) == 0xFF
-                && (bytes[1] & 0xFF) == 0xD8
-                && (bytes[2] & 0xFF) == 0xFF) {
-            return "image/jpeg";
-        }
-        return "application/octet-stream";
+        return ".png";
     }
 }

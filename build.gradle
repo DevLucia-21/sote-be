@@ -40,6 +40,9 @@ dependencies {
 	// Firebase Admin SDK (FCM)
 	implementation 'com.google.firebase:firebase-admin:9.2.0'
 
+	//GCP
+	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-storage:1.2.8.RELEASE'
+
 	// Apache HttpClient (AI 서버 통신)
 	implementation platform('org.apache.httpcomponents.client5:httpclient5-parent:5.2.1')
 	implementation 'org.apache.httpcomponents.client5:httpclient5'
