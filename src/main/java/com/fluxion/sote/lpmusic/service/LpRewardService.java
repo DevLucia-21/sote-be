@@ -21,8 +21,11 @@ public class LpRewardService {
     private final LpRewardRepository lpRewardRepo;
     private final SpotifyService spotifyService;
 
+    /**
+     * LP 자동 지급 (Spotify API 기반)
+     */
     @Transactional
-    public void grantReward(User user, Diary diary, String title, String artist) {
+    public LpRewardResponse grantReward(User user, Diary diary, String title, String artist, String album) {
         LocalDate today = LocalDate.now();
         if (lpRewardRepo.existsByUserAndRewardDate(user, today)) {
             throw new IllegalStateException("오늘은 이미 LP 보상을 받았습니다.");
@@ -33,14 +36,17 @@ public class LpRewardService {
         LpReward reward = LpReward.builder()
                 .user(user)
                 .diary(diary)
-                .title(trackInfo.get("title"))
-                .artist(trackInfo.get("artist"))
-                .albumImageUrl(trackInfo.get("albumImageUrl"))
-                .playUrl(trackInfo.get("playUrl"))
+                .title(trackInfo.getOrDefault("title", title))
+                .artist(trackInfo.getOrDefault("artist", artist))
+                .album(trackInfo.getOrDefault("album", album))
+                .albumImageUrl(trackInfo.getOrDefault("albumImageUrl", null))
+                .playUrl(trackInfo.getOrDefault("playUrl", null))
                 .recommendedAt(LocalDateTime.now())
+                .rewardDate(today)
                 .build();
 
         lpRewardRepo.save(reward);
+        return LpRewardResponse.fromEntity(reward);
     }
 
     @Transactional(readOnly = true)

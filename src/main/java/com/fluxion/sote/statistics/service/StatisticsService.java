@@ -7,7 +7,7 @@ public interface StatisticsService {
     AnalysisStatsResponse getAnalysisStats(String period);
 
     ChallengeCompletionResponse getChallengeCompletion(String period);
-    ChallengeEmotionPerformanceResponse getChallengeEmotionPerformance(String period);
+    ChallengeEmotionPerformanceResponse getChallengeEmotionPerformance(String period, String month);
     ChallengeBadgeResponse getChallengeBadges(String period);
 
     MusicStatsResponse getMusicStats(String period);

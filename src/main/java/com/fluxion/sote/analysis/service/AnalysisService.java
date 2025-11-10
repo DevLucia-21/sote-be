@@ -36,6 +36,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * - AI 서버 호출
  * - 결과 Analysis/AnalysisResult 저장
  * - Diary에 emotionType 무조건 반영
+ * - 과거 일기: 챌린지/LP 지급 제외
  */
 @Service
 @RequiredArgsConstructor
@@ -66,6 +67,7 @@ public class AnalysisService {
         LocalDate targetDate = diary.getDate();
 
         // --- 과거 일기 ---
+        // 오늘 이전 날짜에 처음 작성된 일기일 경우: 감정 분석 + 음악 추천만 (챌린지·LP 제외)
         if (!targetDate.isEqual(today)) {
             Analysis a = getOrCreateAnalysis(user, diary, targetDate);
             if (a.getResult() != null) {
@@ -75,10 +77,12 @@ public class AnalysisService {
             Map<String, Object> body = callAiForAnalysis(user, a, req);
             AnalysisResult r = mapResultFromBody(a, body);
             resultRepo.save(r);
+
             return new AnalysisResponse("ok", "past_diary_analysis_only", body);
         }
 
         // --- 오늘 일기 ---
+        // 오늘 작성된 일기: 감정 분석 + 음악 추천 + 챌린지·LP 지급
         Analysis a = getOrCreateAnalysis(user, diary, today);
         if (a.getResult() != null) {
             Map<String, Object> data = new HashMap<>();

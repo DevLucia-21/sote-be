@@ -36,4 +36,7 @@ public interface DiaryService {
 
     // 오늘 일기 여부 확인
     boolean existsByDate(User user, LocalDate date);
+
+    DiaryDto writeCanvas(User user, String content, String canvasImageBase64,
+                         LocalDate date, List<Long> keywordIds, EmotionType emotionType);
 }

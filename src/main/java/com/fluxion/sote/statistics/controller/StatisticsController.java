@@ -33,8 +33,11 @@ public class StatisticsController {
     }
 
     @GetMapping("/challenges/emotion-performance")
-    public ResponseEntity<ChallengeEmotionPerformanceResponse> getChallengeEmotionPerformance(@RequestParam String period) {
-        return ResponseEntity.ok(statisticsService.getChallengeEmotionPerformance(period));
+    public ResponseEntity<ChallengeEmotionPerformanceResponse> getChallengeEmotionPerformance(
+            @RequestParam String period,
+            @RequestParam(required = false) String month // ← 추가
+    ) {
+        return ResponseEntity.ok(statisticsService.getChallengeEmotionPerformance(period, month));
     }
 
     @GetMapping("/challenges/badges")

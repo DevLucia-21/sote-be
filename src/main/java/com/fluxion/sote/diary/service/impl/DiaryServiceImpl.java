@@ -246,4 +246,52 @@ public class DiaryServiceImpl implements DiaryService {
                 keywords
         );
     }
+
+    @Override
+    @Transactional
+    public DiaryDto writeCanvas(User user, String content, String canvasImageBase64,
+                                LocalDate date, List<Long> keywordIds, EmotionType emotionType) {
+        if (date == null) date = LocalDate.now();
+        if (date.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
+        }
+
+        diaryRepo.findByUserAndDate(user, date).ifPresent(d -> {
+            throw new IllegalArgumentException("이미 작성한 일기가 있습니다.");
+        });
+
+        Set<Keyword> keywords = validateAndGetKeywords(user, keywordIds);
+
+        // base64 → 파일 변환
+        String imageUrl = null;
+        if (canvasImageBase64 != null && !canvasImageBase64.isBlank()) {
+            try {
+                byte[] imageBytes = java.util.Base64.getDecoder().decode(
+                        canvasImageBase64.replaceFirst("^data:image/[^;]+;base64,", "")
+                );
+                java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("canvas_");
+                java.nio.file.Path imagePath = tempDir.resolve("canvas_" + System.currentTimeMillis() + ".png");
+                java.nio.file.Files.write(imagePath, imageBytes);
+                imageUrl = imagePath.toString(); // TODO: 이후 S3나 CDN 업로드 시 교체
+            } catch (Exception e) {
+                throw new RuntimeException("Canvas 이미지 저장 중 오류 발생", e);
+            }
+        }
+
+        Diary diary = Diary.builder()
+                .user(user)
+                .date(date)
+                .content(content)
+                .writeType(WriteType.OCR)
+                .imageUrl(imageUrl)
+                .emotionType(emotionType)
+                .keywords(keywords)
+                .build();
+
+        diaryRepo.saveAndFlush(diary);
+        publisher.publishEvent(new DiarySavedEvent(diary));
+
+        return toDto(diary);
+    }
+
 }

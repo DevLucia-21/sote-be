@@ -14,6 +14,9 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     // 오늘의 추천 챌린지 조회
     Optional<UserChallenge> findByUserAndDate(User user, LocalDate date);
 
+    // 특정 ID로 사용자 검증 포함 조회 (상세 보기용)
+    Optional<UserChallenge> findByIdAndUser(Long id, User user);
+
     // 최근 N일간 수행한 특정 감정 타입 챌린지 목록
     List<UserChallenge> findByUserAndChallenge_EmotionTypeAndDateAfter(
             User user,
@@ -30,4 +33,13 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     // 완료 횟수 세기 (카테고리별)
     long countByUserAndChallenge_CategoryAndCompletedTrue(User user, String category);
 
+    // 전체 완료된 챌린지 (최신순)
+    List<UserChallenge> findAllByUserAndCompletedTrueOrderByCompletedAtDesc(User user);
+
+    // 월별 완료된 챌린지 (기간 필터 + 최신순)
+    List<UserChallenge> findAllByUserAndDateBetweenAndCompletedTrueOrderByDateDesc(
+            User user,
+            LocalDate start,
+            LocalDate end
+    );
 }

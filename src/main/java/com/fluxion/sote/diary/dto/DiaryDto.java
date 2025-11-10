@@ -52,6 +52,20 @@ public class DiaryDto {
         public EmotionType getEmotionType() { return emotionType; }
     }
 
+    public static class CanvasRequest {
+        private String content;
+        private String canvasImageBase64;
+        private LocalDate date;
+        private List<Long> keywordIds;
+        private EmotionType emotionType;
+
+        public String getContent() { return content; }
+        public String getCanvasImageBase64() { return canvasImageBase64; }
+        public LocalDate getDate() { return date; }
+        public List<Long> getKeywordIds() { return keywordIds; }
+        public EmotionType getEmotionType() { return emotionType; }
+    }
+
     // getter
     public Long getId() { return id; }
     public LocalDate getDate() { return date; }

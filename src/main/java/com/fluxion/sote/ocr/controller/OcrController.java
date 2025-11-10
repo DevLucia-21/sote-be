@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *  OCR 컨트롤러 (Spring ↔ FastAPI 연동)
+ * OCR 컨트롤러 (Spring ↔ FastAPI 연동)
  * - /api/ocr/upload : 프론트 → Spring → FastAPI (실제 사용 엔드포인트)
  * - /api/ocr/preview : 내부 테스트용 (JWT 필요)
  * - /api/ocr/results : FastAPI → Spring 일기 저장 (permitAll)

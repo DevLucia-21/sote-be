@@ -31,6 +31,10 @@ public class LpReward {
     @Column(nullable = false, length = 150)
     private String artist;
 
+    /** 새로 추가된 필드 (앨범명) */
+    @Column(length = 200)
+    private String album;
+
     @Column(length = 500)
     private String albumImageUrl;
 

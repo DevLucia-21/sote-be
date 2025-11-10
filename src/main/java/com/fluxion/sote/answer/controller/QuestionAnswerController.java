@@ -53,7 +53,7 @@ public class QuestionAnswerController {
     @PutMapping("/answers/{answerId}")
     public QuestionAnswerDto.Response update(@PathVariable Long answerId,
                                              @RequestBody QuestionAnswerDto.UpdateRequest req) {
-        System.out.println("🚀 Controller update() reached :: answerId=" + answerId);
+        System.out.println("Controller update() reached :: answerId=" + answerId);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         System.out.println("DEBUG >>> Controller update 호출됨, auth=" + auth);
         System.out.println("DEBUG >>> auth.getName()=" + (auth != null ? auth.getName() : null));

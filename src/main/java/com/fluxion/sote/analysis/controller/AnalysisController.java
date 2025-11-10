@@ -1,4 +1,3 @@
-// com.fluxion.sote.analysis.controller.AnalysisController.java
 package com.fluxion.sote.analysis.controller;
 
 import com.fluxion.sote.analysis.dto.AnalysisRequest;
@@ -27,7 +26,11 @@ public class AnalysisController {
     private final AnalysisRepository analysisRepo;
     private final AnalysisResultRepository resultRepo;
 
-    /** 감정분석 실행 */
+    /**
+     * 감정분석 실행
+     * - 오늘 일기: 감정 + 음악 + 챌린지·LP 지급
+     * - 과거 일기: 감정 + 음악만 (챌린지·LP 제외)
+     */
     @PostMapping
     public ResponseEntity<AnalysisResponse> run(@Valid @RequestBody AnalysisRequest req) {
         AnalysisResponse res = service.run(req);
@@ -45,13 +48,16 @@ public class AnalysisController {
         return ResponseEntity.status(status).body(res);
     }
 
-    /** 빠른 확인용 */
+    /** 빠른 확인용 (디버그용 단순 감정 분석) */
     @PostMapping("/simple")
     public ResponseEntity<AnalysisResponse> runSimple() {
         return run(new AnalysisRequest());
     }
 
-    /** 조회용 API */
+    /**
+     * 분석 결과 조회
+     * - 일기 ID 기준으로 감정·음악 결과 반환
+     */
     @GetMapping("/{diaryId}")
     public ResponseEntity<?> getAnalysis(@PathVariable Long diaryId) {
         Long userId = SecurityUtil.getCurrentUserId();

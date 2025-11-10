@@ -2,6 +2,7 @@ package com.fluxion.sote.diary.controller;
 
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.diary.dto.DiaryDto;
+import com.fluxion.sote.diary.dto.DiaryDto.CanvasRequest;
 import com.fluxion.sote.diary.entity.WriteType;
 import com.fluxion.sote.diary.service.DiaryService;
 import com.fluxion.sote.global.util.SecurityUtil;
@@ -22,6 +23,20 @@ public class DiaryController {
 
     private User getCurrentUser() {
         return SecurityUtil.getCurrentUser();
+    }
+
+    @PostMapping("/canvas")
+    public ResponseEntity<DiaryDto> writeFromCanvas(@RequestBody CanvasRequest request) {
+        User user = SecurityUtil.getCurrentUser();
+        DiaryDto dto = diaryService.writeCanvas(
+                user,
+                request.getContent(),
+                request.getCanvasImageBase64(),
+                request.getDate(),
+                request.getKeywordIds(),
+                request.getEmotionType()
+        );
+        return ResponseEntity.ok(dto);
     }
 
     @PostMapping

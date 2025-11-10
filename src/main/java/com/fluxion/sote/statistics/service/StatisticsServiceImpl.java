@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -84,27 +85,38 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public ChallengeEmotionPerformanceResponse getChallengeEmotionPerformance(String period) {
+    public ChallengeEmotionPerformanceResponse getChallengeEmotionPerformance(String period, String month) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (!"monthly".equalsIgnoreCase(period)) {
             throw new IllegalArgumentException("Only monthly period supported for emotion performance");
         }
 
+        // 월 지정 (없으면 현재 월)
         LocalDate now = LocalDate.now();
-        LocalDate start = now.withDayOfMonth(1);
-        LocalDate end = now.withDayOfMonth(now.lengthOfMonth());
+        YearMonth targetMonth = (month != null)
+                ? YearMonth.parse(month) // 예: 2025-10
+                : YearMonth.from(now);
 
+        LocalDate start = targetMonth.atDay(1);
+        LocalDate end = targetMonth.atEndOfMonth();
+
+        // 쿼리 호출
         List<Object[]> results = challengeStatisticsRepository.countMonthlyEmotionPerformance(userId, start, end);
 
-        Map<EmotionType, Long> stats = new EnumMap<>(EmotionType.class);
+        Map<EmotionType, Long> emotionCounts = new EnumMap<>(EmotionType.class);
+        Map<EmotionType, Long> totalCounts = new EnumMap<>(EmotionType.class);
+
         for (Object[] row : results) {
             EmotionType type = (EmotionType) row[0];
-            Long count = (Long) row[1];
-            stats.put(type, count);
+            Long completed = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+            Long total = row.length > 2 && row[2] != null ? ((Number) row[2]).longValue() : 0L;
+
+            emotionCounts.put(type, completed);
+            totalCounts.put(type, total);
         }
 
-        return new ChallengeEmotionPerformanceResponse(stats);
+        return new ChallengeEmotionPerformanceResponse(emotionCounts, totalCounts);
     }
 
     @Override
