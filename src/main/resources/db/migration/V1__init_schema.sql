@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   profile_image       bytea,
   profile_image_url   VARCHAR(255),
   character           VARCHAR(20)  NOT NULL DEFAULT 'PIANO'
-    CHECK (character IN ('PIANO','GUITAR','DRUM','VIOLIN','FLUTE'))
+    CHECK (character IN ('PIANO','GUITAR','MARIMBA','VIOLIN','FLUTE'))
 );
 
 CREATE TABLE IF NOT EXISTS public.genres (

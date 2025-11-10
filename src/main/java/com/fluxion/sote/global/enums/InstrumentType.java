@@ -3,7 +3,7 @@ package com.fluxion.sote.global.enums;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum InstrumentType {
-    PIANO, GUITAR, DRUM, VIOLIN, FLUTE;
+    PIANO, GUITAR, MARIMBA, VIOLIN, FLUTE;
 
     @JsonCreator
     public static InstrumentType from(Object v) {
