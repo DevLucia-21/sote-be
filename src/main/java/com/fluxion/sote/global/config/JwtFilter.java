@@ -40,13 +40,24 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String uri = request.getRequestURI();
+        final String method = request.getMethod();
+        final String uri = request.getRequestURI();
 
-        // JWT 검증을 건너뛰어야 하는 경로 (서버 간 통신, 헬스체크)
-        if (uri.startsWith("/api/ocr/results") ||
-                uri.startsWith("/api/stt/results") ||
-                uri.startsWith("/health") ||
-                uri.equals("/")) {
+        // 1) Preflight 는 항상 통과
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 2) JWT 검증을 건너뛰어야 하는 경로 (서버↔서버 저장 콜만)
+        //    ※ 기존 startsWith("/api/stt/results")로 인해 GET/PUT까지 스킵되던 문제를 교정
+        boolean skipJwt =
+                ("POST".equalsIgnoreCase(method) && "/api/ocr/results".equals(uri)) ||
+                        ("POST".equalsIgnoreCase(method) && "/api/stt/results".equals(uri)) ||
+                        uri.startsWith("/health") ||
+                        "/".equals(uri);
+
+        if (skipJwt) {
             filterChain.doFilter(request, response);
             return;
         }
