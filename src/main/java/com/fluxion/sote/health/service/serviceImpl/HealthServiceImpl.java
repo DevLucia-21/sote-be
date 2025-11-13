@@ -7,6 +7,7 @@ import com.fluxion.sote.health.dto.HealthSummaryResponse;
 import com.fluxion.sote.health.entity.HealthData;
 import com.fluxion.sote.health.repository.HealthRepository;
 import com.fluxion.sote.health.service.HealthService;
+import com.fluxion.sote.stress.service.StressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -25,8 +26,8 @@ import java.util.stream.Collectors;
 public class HealthServiceImpl implements HealthService {
 
     private final HealthRepository healthRepository;
+    private final StressService stressService;
 
-    // ---- 공용 파서 ----
     private static LocalDateTime parseMeasuredAt(String src) {
         if (src == null || src.isBlank()) return LocalDateTime.now();
         try {
@@ -40,7 +41,6 @@ public class HealthServiceImpl implements HealthService {
         }
     }
 
-    // ---- 단건 멱등 저장 ----
     @Override
     public HealthResponse saveHealthData(HealthRequest request) {
         LocalDateTime measuredAt = parseMeasuredAt(request.getMeasuredAt());
@@ -60,15 +60,22 @@ public class HealthServiceImpl implements HealthService {
 
         try {
             HealthData saved = healthRepository.save(entity);
-            return HealthConverter.toResponse(saved);
+            HealthResponse response = HealthConverter.toResponse(saved);
+            if (response.getHrv() != null) {
+                stressService.saveStress(response.getUserId(), response.getHrv(), response.getMeasuredAt());
+            }
+            return response;
         } catch (DataIntegrityViolationException race) {
             HealthData dedup = healthRepository.findByUserIdAndMeasuredAt(request.getUserId(), measuredAt)
                     .orElseThrow(() -> race);
-            return HealthConverter.toResponse(dedup);
+            HealthResponse response = HealthConverter.toResponse(dedup);
+            if (response.getHrv() != null) {
+                stressService.saveStress(response.getUserId(), response.getHrv(), response.getMeasuredAt());
+            }
+            return response;
         }
     }
 
-    // ---- ✅ 배치 멱등 저장 (최대 100건) ----
     @Override
     public List<HealthResponse> saveHealthDataBulk(List<HealthRequest> requests) {
         if (requests == null || requests.isEmpty()) return List.of();
@@ -82,17 +89,17 @@ public class HealthServiceImpl implements HealthService {
             if (req.getUserId() == null) {
                 throw new IllegalArgumentException("userId is required");
             }
-            // measuredAt 파싱 & 멱등키 확인
             LocalDateTime measuredAt = parseMeasuredAt(req.getMeasuredAt());
-
-            // 1) 기존값 있으면 그대로
             Optional<HealthData> existing = healthRepository.findByUserIdAndMeasuredAt(req.getUserId(), measuredAt);
             if (existing.isPresent()) {
-                results.add(HealthConverter.toResponse(existing.get()));
+                HealthResponse response = HealthConverter.toResponse(existing.get());
+                if (response.getHrv() != null) {
+                    stressService.saveStress(response.getUserId(), response.getHrv(), response.getMeasuredAt());
+                }
+                results.add(response);
                 continue;
             }
 
-            // 2) 신규 엔티티
             HealthData entity = HealthData.builder()
                     .userId(req.getUserId())
                     .heartRate(req.getHeartRate())
@@ -103,19 +110,25 @@ public class HealthServiceImpl implements HealthService {
 
             try {
                 HealthData saved = healthRepository.save(entity);
-                results.add(HealthConverter.toResponse(saved));
+                HealthResponse response = HealthConverter.toResponse(saved);
+                if (response.getHrv() != null) {
+                    stressService.saveStress(response.getUserId(), response.getHrv(), response.getMeasuredAt());
+                }
+                results.add(response);
             } catch (DataIntegrityViolationException race) {
-                // 경합으로 유니크 충돌 시 기존 레코드 반환
                 HealthData dedup = healthRepository.findByUserIdAndMeasuredAt(req.getUserId(), measuredAt)
                         .orElseThrow(() -> race);
-                results.add(HealthConverter.toResponse(dedup));
+                HealthResponse response = HealthConverter.toResponse(dedup);
+                if (response.getHrv() != null) {
+                    stressService.saveStress(response.getUserId(), response.getHrv(), response.getMeasuredAt());
+                }
+                results.add(response);
             }
         }
 
         return results;
     }
 
-    // ---- 조회/요약 기존 그대로 ----
     @Override
     @Transactional(readOnly = true)
     public HealthResponse getTodayHealth(Long userId) {
@@ -133,7 +146,7 @@ public class HealthServiceImpl implements HealthService {
     @Transactional(readOnly = true)
     public List<HealthSummaryResponse> getSummary(Long userId, String period) {
         LocalDateTime startDate = switch (period.toLowerCase()) {
-            case "weekly"  -> LocalDate.now().minusDays(6).atStartOfDay();
+            case "weekly" -> LocalDate.now().minusDays(6).atStartOfDay();
             case "monthly" -> LocalDate.now().minusDays(29).atStartOfDay();
             default -> throw new IllegalArgumentException("Invalid period. Use 'weekly' or 'monthly'.");
         };
@@ -141,9 +154,9 @@ public class HealthServiceImpl implements HealthService {
         List<Object[]> rows = healthRepository.findAveragesSinceNative(userId, startDate);
 
         return rows.stream().map(r -> {
-            String date = r[0] == null ? null : r[0].toString(); // yyyy-MM-dd
-            double avgHr   = r[1] == null ? 0 : ((Number) r[1]).doubleValue();
-            double avgHrv  = r[2] == null ? 0 : ((Number) r[2]).doubleValue();
+            String date = r[0] == null ? null : r[0].toString();
+            double avgHr = r[1] == null ? 0 : ((Number) r[1]).doubleValue();
+            double avgHrv = r[2] == null ? 0 : ((Number) r[2]).doubleValue();
             double avgStep = r[3] == null ? 0 : ((Number) r[3]).doubleValue();
 
             return HealthSummaryResponse.builder()

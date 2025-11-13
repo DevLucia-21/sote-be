@@ -69,6 +69,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/ocr/results").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/stt/results").permitAll()
 
+                        // ===== 워치 페어링 인증 =====
+                        // 워치에서 최초 로그인할 때는 토큰이 없으므로 pair 엔드포인트는 permitAll
+                        .requestMatchers(HttpMethod.POST, "/api/watch/auth/pair").permitAll()
+
+                        // ===== 워치용 건강/스트레스 API는 인증 필수 =====
+                        .requestMatchers("/api/watch/health/**").authenticated()
+                        .requestMatchers("/api/watch/stress/**").authenticated()
+
+
                         // ===== 사용자 호출은 인증 필수 =====
                         .requestMatchers(HttpMethod.POST, "/api/ocr/preview").authenticated() // 운영 기준: 프론트에서 토큰 전송 필수
                         .requestMatchers("/api/diaries/**").authenticated()
