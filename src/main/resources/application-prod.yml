@@ -52,14 +52,14 @@ spring:
         project-id: sote-push
         bucket: sote-profile-image
         credentials:
-          location: ${PROFILE_GCP_CREDENTIALS}
+          location: file:/app/config/gcp-profile.json
         auto-create-files: false
 
       ocr-storage:
         project-id: sote-push
         bucket: sote-diary-uploads-2025
         credentials:
-          location: ${OCR_GCP_CREDENTIALS}
+          location: file:/app/config/gcp-ocr.json
 
 ai:
   analysis:
@@ -84,7 +84,11 @@ spotify:
 gcp:
   vision:
     credentials:
-      location: ${OCR_GCP_CREDENTIALS}
+      location: file:/app/config/gcp-ocr.json
+
+  firebase:
+    credentials:
+      location: file:/app/config/firebase-service-account.json
 
 logging:
   level:

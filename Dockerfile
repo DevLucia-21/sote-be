@@ -33,8 +33,16 @@ WORKDIR /app
 # builder stage에서 빌드된 jar 복사
 COPY --from=builder /app/build/libs/*SNAPSHOT.jar app.jar
 
+# ---- config 폴더 생성 ----
+RUN mkdir -p /app/config
+
+# ---- 환경변수(JSON) → 파일 생성 ----
+RUN echo "$GCP_OCR_JSON" > /app/config/gcp-ocr.json
+RUN echo "$GCP_PROFILE_JSON" > /app/config/gcp-profile.json
+RUN echo "$FIREBASE_JSON" > /app/config/firebase-service-account.json
+
 # 실행 포트
 EXPOSE 8080
 
 # Spring Boot 실행
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "app.jar"]
