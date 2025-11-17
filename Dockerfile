@@ -37,9 +37,9 @@ COPY --from=builder /app/build/libs/*SNAPSHOT.jar app.jar
 RUN mkdir -p /app/config
 
 # ---- 환경변수(JSON) → 파일 생성 ----
-RUN echo "$GCP_OCR_JSON" > /app/config/gcp-ocr.json
-RUN echo "$GCP_PROFILE_JSON" > /app/config/gcp-profile.json
-RUN echo "$FIREBASE_JSON" > /app/config/firebase-service-account.json
+RUN printf "%s" "$GCP_OCR_JSON" > /app/config/gcp-ocr.json
+RUN printf "%s" "$GCP_PROFILE_JSON" > /app/config/gcp-profile.json
+RUN printf "%s" "$FIREBASE_JSON" > /app/config/firebase-service-account.json
 
 # 실행 포트
 EXPOSE 8080
