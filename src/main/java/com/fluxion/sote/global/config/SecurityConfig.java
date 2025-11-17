@@ -1,6 +1,5 @@
 package com.fluxion.sote.global.config;
 
-import com.fluxion.sote.global.config.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -57,6 +56,9 @@ public class SecurityConfig {
                         /* ===== FastAPI ↔ Spring Server (콜백) ===== */
                         .requestMatchers(HttpMethod.POST, "/api/ocr/results").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/stt/results").permitAll()
+
+                        /* ===== 워치 로그인 전 허용해야 하는 API ===== */
+                        .requestMatchers(HttpMethod.POST, "/api/watch/auth/pair").permitAll()
 
                         /* ===== 그 외 모든 /api/** 는 인증 필요 ===== */
                         .requestMatchers("/api/**").authenticated()

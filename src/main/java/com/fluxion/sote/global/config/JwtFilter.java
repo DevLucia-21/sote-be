@@ -43,40 +43,31 @@ public class JwtFilter extends OncePerRequestFilter {
         String method = request.getMethod();
         String uri = request.getRequestURI();
 
-        /* ===============================
-           1) OPTIONS 요청은 JWT 검사 생략
-        =============================== */
+        /* 1) OPTIONS 요청 */
         if ("OPTIONS".equalsIgnoreCase(method)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        /* ====================================================
-           2) JWT 검증을 건너뛰는 화이트리스트 경로
-        ==================================================== */
+        /* 2) JWT 검사 제외 경로 */
         if (isWhiteList(uri, method)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        /* ===============================
-           3) JWT 검증
-        =============================== */
+        /* 3) JWT 검사 */
         String token = resolveToken(request);
 
         if (token != null) {
             try {
-                // access token 유효성 검증
                 jwtUtil.validateAccessToken(token);
 
-                // 블랙리스트 확인
                 String jti = jwtUtil.getJti(token);
                 if (Boolean.TRUE.equals(redis.hasKey("blacklist:" + jti))) {
                     filterChain.doFilter(request, response);
                     return;
                 }
 
-                // 토큰에서 유저 정보 추출
                 Long userId = jwtUtil.getUserIdFromAccessToken(token);
                 String role = jwtUtil.getRole(token);
 
@@ -95,50 +86,42 @@ public class JwtFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
             } catch (Exception ex) {
-                // JWT 오류 발생 시에도 다음 필터로 넘어감
                 filterChain.doFilter(request, response);
                 return;
             }
         }
 
-        // 다음 필터로 진행
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * JWT 검증을 건너뛰는 경로 정의
-     */
+    /** 화이트리스트 */
     private boolean isWhiteList(String uri, String method) {
 
-        // 루트, 헬스체크
         if (uri.equals("/") || uri.startsWith("/health")) return true;
 
-        // 인증 단계 (로그인, 회원가입, refresh 포함)
         if (uri.startsWith("/api/auth/")) return true;
 
-        // 회원가입 화면 초기 데이터
         if (uri.startsWith("/api/genres")) return true;
         if (uri.startsWith("/api/security-questions")) return true;
 
-        // 이메일/비밀번호 찾기
         if (uri.equals("/api/users/find-email")) return true;
         if (uri.equals("/api/users/find-pwd")) return true;
         if (uri.equals("/api/users/password-reset-temp")) return true;
         if (uri.equals("/api/users/check-security")) return true;
 
-        // FastAPI ↔ Spring 콜백 (POST만)
+        // FastAPI callbacks
         if (uri.equals("/api/ocr/results") && method.equals("POST")) return true;
         if (uri.equals("/api/stt/results") && method.equals("POST")) return true;
+
+        // 워치 로그인 (JWT 없이 동작해야 함)
+        if (uri.equals("/api/watch/auth/pair")) return true;
 
         return false;
     }
 
-    /**
-     * Authorization 헤더에서 Bearer 토큰 추출
-     */
+    /** Authorization: Bearer 토큰 파싱 */
     private String resolveToken(HttpServletRequest request) {
         String bearer = request.getHeader("Authorization");
-
         if (bearer != null && bearer.startsWith("Bearer ")) {
             return bearer.substring(7);
         }
