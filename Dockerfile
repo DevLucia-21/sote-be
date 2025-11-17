@@ -30,8 +30,8 @@ RUN mkdir -p /app/config
 
 #build 단계가 아닌 "run 단계"에서 파일을 생성해야 함
 CMD sh -c "\
-  echo \"$GCP_OCR_JSON_BASE64\" | base64 -d > /app/config/gcp-ocr.json && \
-  echo \"$GCP_PROFILE_JSON_BASE64\" | base64 -d > /app/config/gcp-profile.json && \
-  echo \"$FIREBASE_JSON_BASE64\" | base64 -d > /app/config/firebase-service-account.json && \
+  echo \"$GCP_OCR_JSON\" | base64 -d > /app/config/gcp-ocr.json && \
+  echo \"$GCP_PROFILE_JSON\" | base64 -d > /app/config/gcp-profile.json && \
+  echo \"$FIREBASE_JSON\" | base64 -d > /app/config/firebase-service-account.json && \
   java -jar app.jar \
 "
