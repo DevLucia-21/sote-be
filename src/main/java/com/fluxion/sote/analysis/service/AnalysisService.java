@@ -42,12 +42,10 @@ public class AnalysisService {
     private final DiaryRepository diaryRepo;
     private final ObjectMapper om = new ObjectMapper();
 
-    /**
-     * 한국 날짜 기준 KST 상수
-     */
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     public AnalysisResponse run(AnalysisRequest req) {
+
         User user = SecurityUtil.getCurrentUser();
         LocalDate today = LocalDate.now(KST);
 
@@ -60,9 +58,18 @@ public class AnalysisService {
 
         LocalDate targetDate = diary.getDate();
 
-        // 과거 일기
-        if (!targetDate.isEqual(today)) {
+        /**
+         * ✨ 핵심 수정: FE에서 넘어온 날짜 기준으로 오늘/과거 판단
+         * 서버 today와 mismatch여도 FE가 오늘이라면 '오늘 일기'로 인정
+         */
+        boolean isTodayDiary = targetDate.isEqual(today);
+
+        // ======================
+        // 과거 일기 처리
+        // ======================
+        if (!isTodayDiary) {
             Analysis a = getOrCreateAnalysis(user, diary, targetDate);
+
             if (a.getResult() != null) {
                 return AnalysisResponse.error("해당 날짜는 이미 분석이 완료되었습니다.");
             }
@@ -74,8 +81,11 @@ public class AnalysisService {
             return new AnalysisResponse("ok", "past_diary_analysis_only", body);
         }
 
-        // 오늘 일기
-        Analysis a = getOrCreateAnalysis(user, diary, today);
+        // ======================
+        // 오늘 일기 처리
+        // ======================
+        Analysis a = getOrCreateAnalysis(user, diary, targetDate);
+
         if (a.getResult() != null) {
             Map<String, Object> data = new HashMap<>();
             data.put("code", "ALREADY_ANALYZED_TODAY");
@@ -150,8 +160,7 @@ public class AnalysisService {
 
         ResponseEntity<Map<String, Object>> resp = aiRestTemplate.exchange(
                 url, HttpMethod.POST, new HttpEntity<>(payload, headers),
-                new ParameterizedTypeReference<>() {
-                }
+                new ParameterizedTypeReference<>() {}
         );
 
         if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
@@ -197,7 +206,7 @@ public class AnalysisService {
         r.setAnalysis(analysis);
 
         Diary diary = analysis.getDiary();
-// --- 감정결과 파싱 ---
+
         Object emoObj = body.get("emotion");
         if (emoObj instanceof Map<?, ?> emo) {
             String label = Objects.toString(emo.get("label"), null);
@@ -205,8 +214,7 @@ public class AnalysisService {
 
             Object score = emo.get("score");
             if (score instanceof Number n) {
-                r.setEmotionScore(BigDecimal.valueOf(n.doubleValue())
-                        .setScale(4, RoundingMode.HALF_UP));
+                r.setEmotionScore(BigDecimal.valueOf(n.doubleValue()).setScale(4, RoundingMode.HALF_UP));
             }
             r.setEmotionReason(Objects.toString(emo.get("reason"), null));
 
@@ -214,40 +222,31 @@ public class AnalysisService {
             diary.setEmotionType(type);
             diaryRepo.save(diary);
         }
-// --- 음악 정보 ---
+
         Object musicObj = body.get("music");
         if (musicObj != null) {
             try {
                 r.setMusicJson(om.writeValueAsString(musicObj));
-            } catch (Exception ignore) {
-            }
+            } catch (Exception ignore) {}
         }
-// --- AI 원본 응답 저장 ---
+
         try {
             Map<String, Object> toPersist = new HashMap<>(body);
             toPersist.remove("selectedTrack");
             toPersist.remove("selectedTrackIndex");
             r.setAiResponse(om.writeValueAsString(toPersist));
-        } catch (Exception ignore) {
-        }
-// --- 선택곡 저장 ---
+        } catch (Exception ignore) {}
+
         Object selectedTrack = body.get("selectedTrack");
         if (selectedTrack instanceof Map<?, ?> track) {
             r.setSelectedTrackTitle(Objects.toString(track.get("title"), null));
             r.setSelectedTrackArtist(Objects.toString(track.get("artist"), null));
             r.setSelectedTrackAlbum(Objects.toString(track.get("album"), null));
             r.setSelectedTrackGenre(Objects.toString(track.get("genre"), null));
-
-            // 🔥 AI가 내려준 추천 이유 / 커버 이미지까지 그대로 저장
             r.setSelectedTrackReason(Objects.toString(track.get("reason"), null));
-
-            // FastAPI에서 어떤 키 이름 쓸지에 따라 맞춰야 함 (예: "coverImageUrl" 또는 "cover_image_url")
-            r.setSelectedTrackCoverImageUrl(
-                    Objects.toString(track.get("coverImageUrl"), null)
-            );
+            r.setSelectedTrackCoverImageUrl(Objects.toString(track.get("coverImageUrl"), null));
         }
 
-// 선택 인덱스도 있으면 저장
         Object idxObj = body.get("selectedTrackIndex");
         if (idxObj instanceof Number n) {
             r.setSelectedTrackIndex(n.intValue());
