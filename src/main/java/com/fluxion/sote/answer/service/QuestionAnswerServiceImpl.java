@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,8 +27,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
     private final QuestionRepository questionRepository;
     private final QuestionAnswerRepository answerRepository;
 
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");   // 날짜 계산용
-    private static final Duration UPDATE_WINDOW = Duration.ofMinutes(10);
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter YM_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private LocalDate toMonthFirstDay(YearMonth ym) {
@@ -42,25 +40,40 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
                 : YearMonth.parse(yyyyMM, YM_FORMAT);
     }
 
+    /**
+     * 전시회 모드:
+     * - 월에 여러 번 작성 가능
+     * - 기존 답변이 있으면 덮어쓰기
+     * - 수정 제한 없음
+     */
     @Override
     public QuestionAnswerDto.Response create(User user, Long questionId, QuestionAnswerDto.CreateRequest req) {
+
         Question q = questionRepository.findById(questionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "질문을 찾을 수 없습니다."));
 
         YearMonth ym = parseOrNow(req.getMonth());
         LocalDate monthFirst = toMonthFirstDay(ym);
 
-        // 월별 중복 방지
-        if (answerRepository.existsByUserIdAndQuestionIdAndAnswerMonth(user.getId(), q.getId(), monthFirst)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "해당 달에 이미 답변이 존재합니다.");
+        // 🔥 전시회 모드 핵심: 기존 답변이 있으면 자동으로 덮어쓰기
+        QuestionAnswer existing = answerRepository
+                .findByUserIdAndQuestionIdAndAnswerMonth(user.getId(), q.getId(), monthFirst)
+                .orElse(null);
+
+        if (existing != null) {
+            existing.setAnswerText(req.getAnswerText());
+            existing.setUpdatedAt(Instant.now());  // 수정 시간 갱신
+            QuestionAnswer saved = answerRepository.save(existing);
+            return toResponse(saved, q);
         }
 
+        // 기존 답변 없으면 새로 생성
         QuestionAnswer saved = answerRepository.save(
                 QuestionAnswer.builder()
                         .user(user)
                         .question(q)
                         .answerText(req.getAnswerText())
-                        .answeredAt(Instant.now())   // ⭐ UTC 기준 Instant
+                        .answeredAt(Instant.now())
                         .answerMonth(monthFirst)
                         .build()
         );
@@ -68,34 +81,25 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
         return toResponse(saved, q);
     }
 
+    /**
+     * update는 사실상 필요없지만 유지.
+     * 전시회 모드에서는 10분 제한 제거.
+     */
     @Override
     public QuestionAnswerDto.Response update(User user, Long answerId, QuestionAnswerDto.UpdateRequest req) {
-        log.info("[update] 요청 들어옴 :: answerId={}, currentUserId={}", answerId, user.getId());
 
         QuestionAnswer a = answerRepository.findById(answerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "답변을 찾을 수 없습니다."));
 
-        // ⭐ Instant로 통일
-        Instant now = Instant.now();
-        Duration elapsed = Duration.between(a.getAnsweredAt(), now);
-
-        log.info("[Time Check] answerId={}, answeredAt={}, now={}, elapsed={}s (limit={}s)",
-                a.getId(), a.getAnsweredAt(), now, elapsed.toSeconds(), UPDATE_WINDOW.getSeconds());
-
-        if (!Objects.equals(a.getUser().getId(), user.getId())) {
+        if (!a.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 답변만 수정할 수 있습니다.");
         }
 
-        if (elapsed.compareTo(UPDATE_WINDOW) > 0) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "작성 후 10분이 지나 수정할 수 없습니다.");
-        }
-
+        // 🔥 10분 제한 제거: 언제든 수정 가능
         a.setAnswerText(req.getAnswerText());
-        a.setUpdatedAt(now);   // ⭐ UTC Instant
+        a.setUpdatedAt(Instant.now());
 
         QuestionAnswer saved = answerRepository.save(a);
-        log.info("[update] 성공 :: answerId={}, userId={}", saved.getId(), user.getId());
-
         return toResponse(saved, saved.getQuestion());
     }
 
@@ -113,17 +117,9 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
                         .questionContent(a.getQuestion().getContent())
                         .questionDay(a.getQuestion().getId().intValue())
                         .answerText(a.getAnswerText())
-
-                        // ⭐ 그대로 Instant 사용
                         .answeredAt(a.getAnsweredAt())
                         .updatedAt(a.getUpdatedAt())
-
-                        // ⭐ 한국 날짜로 변환해야 함
-                        .date(
-                                a.getAnsweredAt()
-                                        .atZone(KST)
-                                        .toLocalDate()
-                        )
+                        .date(a.getAnsweredAt().atZone(KST).toLocalDate())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -131,8 +127,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
     @Override
     @Transactional(readOnly = true)
     public boolean existsForMeThisMonth(User user, Long questionId, YearMonth ym) {
-        LocalDate monthFirst = toMonthFirstDay(ym);
-        return answerRepository.existsByUserIdAndQuestionIdAndAnswerMonth(user.getId(), questionId, monthFirst);
+        return false; // 전시회 모드: 항상 새로 작성 가능
     }
 
     private QuestionAnswerDto.Response toResponse(QuestionAnswer entity, Question q) {
@@ -142,7 +137,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
                 .questionContent(q.getContent())
                 .questionDay(q.getId().intValue())
                 .answerText(entity.getAnswerText())
-                .answeredAt(entity.getAnsweredAt())   // Instant 그대로 반환
+                .answeredAt(entity.getAnsweredAt())
                 .answerMonth(entity.getAnswerMonth())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

@@ -22,15 +22,21 @@ public class LpRewardService {
     private final SpotifyService spotifyService;
 
     /**
-     * LP 자동 지급 (Spotify API 기반)
+     * 전시회 버전:
+     * - LP 보상 하루 1회 제한 제거
+     * - 챌린지 완료할 때마다 무제한 LP 생성
      */
     @Transactional
     public LpRewardResponse grantReward(User user, Diary diary, String title, String artist, String album) {
         LocalDate today = LocalDate.now();
-        if (lpRewardRepo.existsByUserAndRewardDate(user, today)) {
-            throw new IllegalStateException("오늘은 이미 LP 보상을 받았습니다.");
-        }
 
+        // ❌ 하루 1개 제한 제거!
+        // 기존:
+        // if (lpRewardRepo.existsByUserAndRewardDate(user, today)) {
+        //     throw new IllegalStateException("오늘은 이미 LP 보상을 받았습니다.");
+        // }
+
+        // Spotify에서 상세 정보 조회 (기존 유지)
         var trackInfo = spotifyService.searchTrack(title, artist);
 
         LpReward reward = LpReward.builder()
@@ -42,7 +48,7 @@ public class LpRewardService {
                 .albumImageUrl(trackInfo.getOrDefault("albumImageUrl", null))
                 .playUrl(trackInfo.getOrDefault("playUrl", null))
                 .recommendedAt(LocalDateTime.now())
-                .rewardDate(today)
+                .rewardDate(today)  // 같은 날짜여도 여러 개 저장 가능
                 .build();
 
         lpRewardRepo.save(reward);
@@ -59,11 +65,10 @@ public class LpRewardService {
 
     @Transactional(readOnly = true)
     public List<LpRewardResponse> getWeeklyRewards(User user, int year, int week) {
-        // 주차 계산 (ISO 기준)
         WeekFields weekFields = WeekFields.of(Locale.getDefault());
         LocalDate start = LocalDate.ofYearDay(year, 1)
                 .with(weekFields.weekOfYear(), week)
-                .with(weekFields.dayOfWeek(), 1); // 월요일 시작
+                .with(weekFields.dayOfWeek(), 1); // 월요일
         LocalDate end = start.plusDays(6);
 
         return lpRewardRepo.findAllByUserAndRewardDateBetweenOrderByRecommendedAtDesc(user, start, end)

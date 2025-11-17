@@ -8,7 +8,17 @@ import java.util.Optional;
 
 public interface SttResultRepository extends JpaRepository<SttResult, Long> {
 
-    // 오늘 1회 제한 체크
-    boolean existsByUserIdAndCreatedAtBetween(Long userId, LocalDateTime start, LocalDateTime end);
+    // 원래 있던 메서드
+    boolean existsByUserIdAndCreatedAtBetween(
+            Long userId,
+            LocalDateTime startOfDay,
+            LocalDateTime endOfDay
+    );
 
+    //전시회용: 오늘 기록 중 가장 최근 한 개 가져오기
+    Optional<SttResult> findTopByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+            Long userId,
+            LocalDateTime startOfDay,
+            LocalDateTime endOfDay
+    );
 }

@@ -26,24 +26,19 @@ public class ChallengeRecommendService {
     private final AnalysisResultRepository analysisResultRepo;
 
     /**
-     * 오늘의 챌린지 추천
-     * - emotionType이 null이면 최신 분석 결과의 emotionLabel 기반으로 결정
-     * - 추천된 챌린지와 "어떤 분석 결과로 추천되었는지"를 UserChallenge에 함께 저장
+     * 전시회 버전 (제한 없음)
+     * - 하루 여러 번 추천 가능
+     * - 최근 3일 제외 로직 없음
      */
     public ChallengeDefinition recommendTodayChallenge(User user, EmotionType emotionType) {
         LocalDate today = LocalDate.now();
-
-        // 이미 오늘 추천된 챌린지가 있으면 에러
-        userChallengeRepo.findByUserAndDate(user, today).ifPresent(existing -> {
-            throw new IllegalStateException("오늘의 챌린지는 이미 추천되었습니다.");
-        });
 
         // 1. 최신 분석 결과 가져오기
         AnalysisResult latestResult = analysisResultRepo
                 .findTopByAnalysis_User_IdOrderByCreatedAtDesc(user.getId())
                 .orElseThrow(() -> new IllegalStateException("최근 분석 결과가 없습니다."));
 
-        // 2. emotionType이 null이면 분석 결과의 emotionLabel 사용
+        // 2. emotionType이 null이면 분석 결과 기반
         if (emotionType == null) {
             emotionType = EmotionType.fromLabel(latestResult.getEmotionLabel());
             if (emotionType == null) {
@@ -51,38 +46,22 @@ public class ChallengeRecommendService {
             }
         }
 
-        // 3. 최근 3일 내 동일 감정 챌린지 제외
-        LocalDate threeDaysAgo = today.minusDays(3);
-        var recent = userChallengeRepo
-                .findByUserAndChallenge_EmotionTypeAndDateAfter(user, emotionType, threeDaysAgo);
-
-        List<Long> excludeIds = recent.stream()
-                .map(rc -> rc.getChallenge().getId())
-                .toList();
-
-        // 4. 추천 후보 필터링
-        List<ChallengeDefinition> candidates = definitionRepo
-                .findAllByEmotionTypeAndIsDeletedFalse(emotionType)
-                .stream()
-                .filter(ch -> !excludeIds.contains(ch.getId()))
-                .toList();
-
-        if (candidates.isEmpty()) {
-            candidates = definitionRepo.findAllByEmotionTypeAndIsDeletedFalse(emotionType);
-        }
+        // 3. 추천 후보 전체 가져오기 (제한 없음)
+        List<ChallengeDefinition> candidates =
+                definitionRepo.findAllByEmotionTypeAndIsDeletedFalse(emotionType);
 
         if (candidates.isEmpty()) {
             throw new IllegalStateException("추천 가능한 챌린지가 없습니다.");
         }
 
-        // 5. 랜덤으로 하나 선택
+        // 4. 랜덤으로 선택
         ChallengeDefinition selected = candidates.get(new Random().nextInt(candidates.size()));
 
-        // 6. 추천 이력 저장 + 어떤 분석 결과로 추천됐는지 함께 기록
+        // 5. 추천 기록 저장 (중복 여러 번 가능)
         UserChallenge record = UserChallenge.builder()
                 .user(user)
                 .challenge(selected)
-                .analysisResult(latestResult) // 여기서 연결
+                .analysisResult(latestResult)
                 .date(today)
                 .completed(false)
                 .build();

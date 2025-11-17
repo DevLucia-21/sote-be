@@ -2,7 +2,7 @@ package com.fluxion.sote.stt.service;
 
 import com.fluxion.sote.stt.entity.SttResult;
 import com.fluxion.sote.stt.repository.SttResultRepository;
-import com.fluxion.sote.user.repository.UserRepository; // 추가
+import com.fluxion.sote.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,38 +11,43 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-/**
- * FastAPI 및 사용자용 STT 결과 서비스
- * - FastAPI 호출은 userId 기반으로 처리
- * - userId는 users 테이블의 FK이므로 존재 검증 수행
- */
 @Service
 @RequiredArgsConstructor
 public class SttResultService {
 
     private final SttResultRepository sttResultRepository;
-    private final UserRepository userRepository; // FK 검증용 추가
+    private final UserRepository userRepository;
 
-    //FastAPI → Spring 저장용
-
+    /**
+     * 전시회용 STT 저장:
+     * - 하루 여러 번 호출 가능
+     * - 오늘 기록이 있으면 최신 것 하나 찾아서 text 덮어쓰기
+     */
     @Transactional
     public Long saveSttResult(Long userId, String text) {
 
-        //FK 무결성 검증: 존재하지 않는 userId 방지
+        // FK 검증 (그냥 방어용)
         if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("존재하지 않는 사용자입니다. userId=" + userId);
         }
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
-        boolean exists = sttResultRepository.existsByUserIdAndCreatedAtBetween(
-                userId, startOfDay, endOfDay
-        );
+        //오늘 기준 STT 결과 중 가장 최근 것 조회
+        SttResult existing = sttResultRepository
+                .findTopByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                        userId, startOfDay, endOfDay
+                )
+                .orElse(null);
 
-        if (exists) {
-            throw new IllegalStateException("오늘은 이미 STT를 실행했습니다. 하루 1회만 가능합니다.");
+        if (existing != null) {
+            // 이미 오늘 STT가 있으면 덮어쓰기
+            existing.setText(text);
+            return sttResultRepository.save(existing).getId();
         }
 
+        // 오늘 기록이 없으면 새로 생성
         SttResult result = new SttResult();
         result.setUserId(userId);
         result.setText(text);
@@ -50,14 +55,12 @@ public class SttResultService {
         return sttResultRepository.save(result).getId();
     }
 
-    //STT 결과 조회
-
     @Transactional(readOnly = true)
     public SttResult getSttResult(Long id) {
         return sttResultRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("STT 결과를 찾을 수 없습니다."));
     }
-    //STT 결과 수정
+
     @Transactional
     public void updateSttResult(Long id, String newText) {
         SttResult result = getSttResult(id);
