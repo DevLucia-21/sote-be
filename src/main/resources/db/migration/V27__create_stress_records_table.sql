@@ -1,0 +1,8 @@
+CREATE TABLE stress_records (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    hrv DOUBLE PRECISION NOT NULL,
+    stress_level VARCHAR(20) NOT NULL,
+    measured_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL
+);
