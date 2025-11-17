@@ -78,7 +78,7 @@ tasks.named('test') {
 flyway {
 	url = 'jdbc:postgresql://localhost:5432/sote_db'
 	user = 'sote_user'
-	password = 'net123'
+	password = System.getenv("DB_PASSWORD") ?: ""
 	locations = ['classpath:db/migration']
 	cleanDisabled = false
 }
