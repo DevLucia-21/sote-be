@@ -37,11 +37,8 @@ out/
 .vscode/
 
 /src/main/resources/application.yml
-/src/main/resources/application-prod.yml
-/src/main/resources/*.yml
 /src/main/resources/firebase/
 /*.json
 
 # 환경 변수 파일
 .env
-.yml
