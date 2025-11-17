@@ -30,14 +30,11 @@ public class DiaryServiceImpl implements DiaryService {
     private final AnalysisService analysisService;
     private final ApplicationEventPublisher publisher;
 
-
-    //사용자 소유 키워드만 검증
-    //키워드 개수 제한: 작성 시 최대 5개
+    // 키워드 검증 (전시회에서도 유지)
     private Set<Keyword> validateAndGetKeywords(User user, List<Long> keywordIds) {
         if (keywordIds == null || keywordIds.isEmpty()) {
             return Set.of();
         }
-
         if (keywordIds.size() > 5) {
             throw new IllegalArgumentException("키워드는 최대 5개까지만 선택할 수 있습니다.");
         }
@@ -49,18 +46,17 @@ public class DiaryServiceImpl implements DiaryService {
 
         return Set.copyOf(keywords);
     }
+
     // ================== TEXT / STT 저장 ==================
     @Override
     @Transactional
     public DiaryDto write(User user, String content, LocalDate date,
                           WriteType writeType, List<Long> keywordIds, EmotionType emotionType) {
-        if (date.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
-        }
 
-        diaryRepo.findByUserAndDate(user, date).ifPresent(d -> {
-            throw new IllegalArgumentException("이미 작성한 일기가 있습니다.");
-        });
+        if (date == null) date = LocalDate.now();
+
+        // ★ 전시회: 중복 작성 제한 제거
+        // 기존: diaryRepo.findByUserAndDate(user, date).ifPresent( -> throw "이미 작성한 일기가 있습니다."
 
         Set<Keyword> keywords = validateAndGetKeywords(user, keywordIds);
 
@@ -73,33 +69,27 @@ public class DiaryServiceImpl implements DiaryService {
                 .keywords(keywords)
                 .build();
 
-        diaryRepo.saveAndFlush(diary); // ID 확정
-
-        // 커밋 완료 후 자동 감정분석 실행 이벤트 발행
+        diaryRepo.saveAndFlush(diary);
         publisher.publishEvent(new DiarySavedEvent(diary));
 
         return toDto(diary);
     }
 
-    // ================== OCR 저장 (호환용) ==================
+    // ================== OCR 저장 ==================
     @Override
     @Transactional
     public DiaryDto writeOcr(User user, String content, String imageUrl, LocalDate date) {
         return writeOcr(user, content, imageUrl, date, null, null);
     }
 
-    // ================== OCR 저장 (확장 시그니처) ==================
     @Override
     @Transactional
     public DiaryDto writeOcr(User user, String content, String imageUrl, LocalDate date,
                              List<Long> keywordIds, EmotionType emotionType) {
-        if (date.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
-        }
 
-        diaryRepo.findByUserAndDate(user, date).ifPresent(d -> {
-            throw new IllegalArgumentException("이미 작성한 일기가 있습니다.");
-        });
+        if (date == null) date = LocalDate.now();
+
+        // ★ 전시회: 중복 작성 제한 제거
 
         Set<Keyword> keywords = validateAndGetKeywords(user, keywordIds);
 
@@ -114,8 +104,6 @@ public class DiaryServiceImpl implements DiaryService {
                 .build();
 
         diaryRepo.saveAndFlush(diary);
-
-        // 커밋 완료 후 자동 감정분석 실행 이벤트 발행
         publisher.publishEvent(new DiarySavedEvent(diary));
 
         return toDto(diary);
@@ -126,10 +114,7 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto update(User user, LocalDate date, String content,
                            List<Long> keywordIds, EmotionType emotionType) {
-        if (date.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("미래 일기는 수정할 수 없습니다.");
-        }
-
+        // 업데이트는 전시회에서도 기존처럼 유지
         Diary diary = diaryRepo.findByUserAndDate(user, date)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 날짜의 일기가 존재하지 않습니다."));
 
@@ -142,8 +127,6 @@ public class DiaryServiceImpl implements DiaryService {
         }
 
         diaryRepo.saveAndFlush(diary);
-
-        // 커밋 완료 후 자동 감정분석 실행 이벤트 발행
         publisher.publishEvent(new DiarySavedEvent(diary));
 
         return toDto(diary);
@@ -158,7 +141,7 @@ public class DiaryServiceImpl implements DiaryService {
         diaryRepo.delete(diary);
     }
 
-    // ================== 단일 조회 ==================
+    // ================== GET ==================
     @Override
     @Transactional(readOnly = true)
     public DiaryDto getByDate(User user, LocalDate date) {
@@ -167,11 +150,11 @@ public class DiaryServiceImpl implements DiaryService {
         return toDto(diary);
     }
 
-    // ================== 오늘 일기 여부 확인 ==================
     @Override
     @Transactional(readOnly = true)
     public boolean existsByDate(User user, LocalDate date) {
-        return diaryRepo.findByUserAndDate(user, date).isPresent();
+        // ★ 전시회: 항상 false 반환 (여러 번 작성 가능)
+        return false;
     }
 
     // ================== 기간 조회 ==================
@@ -179,12 +162,10 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional(readOnly = true)
     public List<DiaryDto> getBetween(User user, LocalDate from, LocalDate to) {
         return diaryRepo.findAllByUserAndDateBetween(user, from, to)
-                .stream()
-                .map(this::toDto)
-                .toList();
+                .stream().map(this::toDto).toList();
     }
 
-    // ================== 키워드별 조회 ==================
+    // ================== 키워드 검색 ==================
     @Override
     @Transactional(readOnly = true)
     public List<DiaryDto> getByKeyword(User user, Long keywordId) {
@@ -192,22 +173,16 @@ public class DiaryServiceImpl implements DiaryService {
                 .orElseThrow(() -> new ResourceNotFoundException("해당 키워드를 찾을 수 없습니다."));
 
         return diaryRepo.findAllByUserAndKeywordsContaining(user, keyword)
-                .stream()
-                .map(this::toDto)
-                .toList();
+                .stream().map(this::toDto).toList();
     }
 
-    // ================== 키워드 텍스트 조회 ==================
     @Override
     @Transactional(readOnly = true)
     public List<DiaryDto> getByKeywordText(User user, String keyword) {
         return diaryRepo.findByKeywordText(user, keyword)
-                .stream()
-                .map(this::toDto)
-                .toList();
+                .stream().map(this::toDto).toList();
     }
 
-    //다중 키워드 검색 (검색 시 최대 3개 제한)
     @Override
     @Transactional(readOnly = true)
     public List<DiaryDto> getByKeywords(User user, List<Long> keywordIds, String mode) {
@@ -225,16 +200,13 @@ public class DiaryServiceImpl implements DiaryService {
             diaries = diaryRepo.findAllByUserAndKeywordsIn(user, keywordIds);
         }
 
-        return diaries.stream()
-                .map(this::toDto)
-                .toList();
+        return diaries.stream().map(this::toDto).toList();
     }
 
     // ================== DTO 변환 ==================
     private DiaryDto toDto(Diary diary) {
         List<String> keywords = diary.getKeywords().stream()
-                .map(Keyword::getContent)
-                .toList();
+                .map(Keyword::getContent).toList();
 
         return new DiaryDto(
                 diary.getId(),
@@ -251,18 +223,13 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto writeCanvas(User user, String content, String canvasImageBase64,
                                 LocalDate date, List<Long> keywordIds, EmotionType emotionType) {
-        if (date == null) date = LocalDate.now();
-        if (date.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
-        }
 
-        diaryRepo.findByUserAndDate(user, date).ifPresent(d -> {
-            throw new IllegalArgumentException("이미 작성한 일기가 있습니다.");
-        });
+        if (date == null) date = LocalDate.now();
+
+        // ★ 전시회: 중복 작성 제한 제거
 
         Set<Keyword> keywords = validateAndGetKeywords(user, keywordIds);
 
-        // base64 → 파일 변환
         String imageUrl = null;
         if (canvasImageBase64 != null && !canvasImageBase64.isBlank()) {
             try {
@@ -272,7 +239,7 @@ public class DiaryServiceImpl implements DiaryService {
                 java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("canvas_");
                 java.nio.file.Path imagePath = tempDir.resolve("canvas_" + System.currentTimeMillis() + ".png");
                 java.nio.file.Files.write(imagePath, imageBytes);
-                imageUrl = imagePath.toString(); // TODO: 이후 S3나 CDN 업로드 시 교체
+                imageUrl = imagePath.toString();
             } catch (Exception e) {
                 throw new RuntimeException("Canvas 이미지 저장 중 오류 발생", e);
             }
@@ -293,5 +260,4 @@ public class DiaryServiceImpl implements DiaryService {
 
         return toDto(diary);
     }
-
 }
