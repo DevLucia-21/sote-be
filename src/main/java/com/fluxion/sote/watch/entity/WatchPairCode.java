@@ -1,48 +1,40 @@
-// src/main/java/com/fluxion/sote/watch/entity/WatchPairCode.java
 package com.fluxion.sote.watch.entity;
 
 import com.fluxion.sote.auth.entity.User;
-import com.fluxion.sote.global.model.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "watch_pair_codes",
-        indexes = {
-                @Index(name = "idx_watch_pair_code_code", columnList = "code")
-        }
-)
+@Table(name = "watch_pair_codes")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class WatchPairCode extends BaseEntity {
+public class WatchPairCode {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 6자리 코드 (예: 483927)
-    @Column(name = "code", nullable = false, unique = true, length = 16)
+    @Column(length = 16, nullable = false, unique = true)
     private String code;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // 만료 시각
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
-    // 사용 여부
     @Column(name = "used", nullable = false)
     private boolean used;
 
-    // 실제 사용된 시각
     @Column(name = "used_at")
     private LocalDateTime usedAt;
+
+    // created_at / updated_at 은 지금 안 써도 되니까 생략해도 됩니다.
+    // BaseEntity를 쓰고 싶다면 여기서 상속만 추가하면 돼요.
 }

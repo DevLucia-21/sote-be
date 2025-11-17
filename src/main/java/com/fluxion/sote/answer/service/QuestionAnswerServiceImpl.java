@@ -28,7 +28,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
     private final QuestionRepository questionRepository;
     private final QuestionAnswerRepository answerRepository;
 
-    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");   // 날짜 계산용
     private static final Duration UPDATE_WINDOW = Duration.ofMinutes(10);
     private static final DateTimeFormatter YM_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
@@ -38,7 +38,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
 
     private YearMonth parseOrNow(String yyyyMM) {
         return (yyyyMM == null || yyyyMM.isBlank())
-                ? YearMonth.now(ZONE)
+                ? YearMonth.now(KST)
                 : YearMonth.parse(yyyyMM, YM_FORMAT);
     }
 
@@ -60,7 +60,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
                         .user(user)
                         .question(q)
                         .answerText(req.getAnswerText())
-                        .answeredAt(OffsetDateTime.now(ZONE))   // OffsetDateTime 사용
+                        .answeredAt(Instant.now())   // ⭐ UTC 기준 Instant
                         .answerMonth(monthFirst)
                         .build()
         );
@@ -75,38 +75,23 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
         QuestionAnswer a = answerRepository.findById(answerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "답변을 찾을 수 없습니다."));
 
-        OffsetDateTime now = OffsetDateTime.now(ZONE);
+        // ⭐ Instant로 통일
+        Instant now = Instant.now();
         Duration elapsed = Duration.between(a.getAnsweredAt(), now);
 
-        // 작성자 디버깅 로그
-        log.info("👤 [User Debug] answerId={}, a.user.class={}, a.user.id={}, currentUser.class={}, currentUser.id={}",
-                a.getId(),
-                a.getUser().getClass().getName(),
-                a.getUser().getId(),
-                user.getClass().getName(),
-                user.getId()
-        );
-
-        // 작성자 체크 (id만 비교)
-        if (!Objects.equals(a.getUser().getId(), user.getId())) {
-            log.warn("작성자 불일치 :: answerUserId={} != currentUserId={}",
-                    a.getUser().getId(), user.getId());
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 답변만 수정할 수 있습니다.");
-        }
-
-        // 시간 체크
         log.info("[Time Check] answerId={}, answeredAt={}, now={}, elapsed={}s (limit={}s)",
                 a.getId(), a.getAnsweredAt(), now, elapsed.toSeconds(), UPDATE_WINDOW.getSeconds());
 
+        if (!Objects.equals(a.getUser().getId(), user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 답변만 수정할 수 있습니다.");
+        }
+
         if (elapsed.compareTo(UPDATE_WINDOW) > 0) {
-            log.warn("수정 제한 초과 :: answerId={}, elapsed={}s > {}s",
-                    a.getId(), elapsed.toSeconds(), UPDATE_WINDOW.getSeconds());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "작성 후 10분이 지나 수정할 수 없습니다.");
         }
 
-        // 수정 적용
         a.setAnswerText(req.getAnswerText());
-        a.setUpdatedAt(now);
+        a.setUpdatedAt(now);   // ⭐ UTC Instant
 
         QuestionAnswer saved = answerRepository.save(a);
         log.info("[update] 성공 :: answerId={}, userId={}", saved.getId(), user.getId());
@@ -118,6 +103,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
     @Transactional(readOnly = true)
     public List<QuestionAnswerDto.MonthlyItem> getMyAnswersForMonth(User user, YearMonth ym) {
         LocalDate monthFirst = toMonthFirstDay(ym);
+
         return answerRepository
                 .findAllWithQuestionByUserIdAndAnswerMonthOrderByQuestionDay(user.getId(), monthFirst)
                 .stream()
@@ -127,9 +113,17 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
                         .questionContent(a.getQuestion().getContent())
                         .questionDay(a.getQuestion().getId().intValue())
                         .answerText(a.getAnswerText())
+
+                        // ⭐ 그대로 Instant 사용
                         .answeredAt(a.getAnsweredAt())
                         .updatedAt(a.getUpdatedAt())
-                        .date(a.getAnsweredAt().toLocalDate())
+
+                        // ⭐ 한국 날짜로 변환해야 함
+                        .date(
+                                a.getAnsweredAt()
+                                        .atZone(KST)
+                                        .toLocalDate()
+                        )
                         .build())
                 .collect(Collectors.toList());
     }
@@ -148,7 +142,7 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
                 .questionContent(q.getContent())
                 .questionDay(q.getId().intValue())
                 .answerText(entity.getAnswerText())
-                .answeredAt(entity.getAnsweredAt())
+                .answeredAt(entity.getAnsweredAt())   // Instant 그대로 반환
                 .answerMonth(entity.getAnswerMonth())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

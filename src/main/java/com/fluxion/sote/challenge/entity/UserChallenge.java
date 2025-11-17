@@ -1,5 +1,6 @@
 package com.fluxion.sote.challenge.entity;
 
+import com.fluxion.sote.analysis.entity.AnalysisResult;
 import com.fluxion.sote.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,12 +25,17 @@ public class UserChallenge {
     @ManyToOne(fetch = FetchType.LAZY)
     private ChallengeDefinition challenge;
 
+    // 이 챌린지가 어떤 분석 결과(일기 분석)에 의해 추천되었는지 연결
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "analysis_result_id")
+    private AnalysisResult analysisResult;
+
     private LocalDate date; // 추천된 날짜
 
-    @Column(name = "is_completed")  // DB 컬럼명은 is_completed 유지
+    @Column(name = "is_completed")
     private boolean completed;
 
-    private LocalDateTime completedAt; // 실제 완료 시각
+    private LocalDateTime completedAt;
 
     /**
      * 챌린지 완료 처리

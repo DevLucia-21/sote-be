@@ -7,14 +7,19 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "analysis",
+@Table(
+        name = "analysis",
         uniqueConstraints = @UniqueConstraint(name = "ux_analysis_user_day",
-                columnNames = {"user_id", "analysis_date"}))
+                columnNames = {"user_id", "analysis_date"}
+        )
+)
 @Getter
 @Setter
 public class Analysis {
@@ -23,7 +28,7 @@ public class Analysis {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false) //
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "diary_id", nullable = false)
     private Diary diary;
 
@@ -38,13 +43,11 @@ public class Analysis {
     private LocalDate analysisDate;
 
     @Column(name = "created_at", nullable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
-    // 결과 1:1 (analysis_result)
     @OneToOne(mappedBy = "analysis", fetch = FetchType.LAZY)
     private AnalysisResult result;
 
-    // 장르 다대다
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "analysis_genres",
@@ -55,9 +58,12 @@ public class Analysis {
 
     @PrePersist
     void onCreate() {
-        ZoneId KST = ZoneId.of("Asia/Seoul");
-        if (analysisDate == null) analysisDate = LocalDate.now(KST);
-        if (createdAt == null) createdAt = OffsetDateTime.now(KST);
+        if (analysisDate == null) {
+            analysisDate = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        }
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
     }
 
     // 편의 메서드
@@ -66,7 +72,9 @@ public class Analysis {
             r.setAnalysis(this);
             this.result = r;
         } else {
-            if (this.result != null) this.result.setAnalysis(null);
+            if (this.result != null) {
+                this.result.setAnalysis(null);
+            }
             this.result = null;
         }
     }

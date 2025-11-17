@@ -14,4 +14,9 @@ public class DiarySttResponse {
     private Long diaryId;
     private String date;
     private String content;
+    private String summary;
+    private String emotionType;
+    private Integer analysisScore;
+    private String musicTitle;
+    private String musicGenre;
 }

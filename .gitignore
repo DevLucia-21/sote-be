@@ -42,3 +42,9 @@ out/
 
 # 환경 변수 파일
 .env
+
+/src/main/resources/application-prod.yml
+/src/main/resources/*.yml
+
+# 환경 변수 파일
+.yml

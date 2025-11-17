@@ -8,8 +8,11 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+
+// AnalysisResult.java
 
 @Entity
 @Table(name = "analysis_result",
@@ -21,7 +24,6 @@ public class AnalysisResult {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // owning side (1:1)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "analysis_id", nullable = false, unique = true)
     private Analysis analysis;
@@ -52,6 +54,13 @@ public class AnalysisResult {
     @Column(name = "selected_track_index")
     private Integer selectedTrackIndex; // 0-based 인덱스
 
+    // 🔥 여기 새로 추가
+    @Column(name = "selected_track_reason", columnDefinition = "TEXT")
+    private String selectedTrackReason;
+
+    @Column(name = "selected_track_cover_image_url", length = 512)
+    private String selectedTrackCoverImageUrl;
+
     // music 배열 전체 / 원본 응답(JSONB)
     @Column(name = "music_json", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
@@ -71,3 +80,4 @@ public class AnalysisResult {
         }
     }
 }
+

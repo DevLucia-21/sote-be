@@ -31,7 +31,7 @@ public class SecurityConfig {
                             "https://sote.kr",
                             "https://app.sote.kr",
                             "https://fastapi.sote.kr",   // 내부 AI 서비스 도메인(예: FastAPI)
-                            "http://localhost:3000"      // 로컬 프론트(개발편의)
+                            "http://localhost:3000"  // 로컬 프론트(개발편의)"http://localhost:8080",  // ★ Postman 테스트용
                     ));
                     config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
                     config.setAllowedHeaders(List.of("*"));
@@ -57,6 +57,12 @@ public class SecurityConfig {
                         // 인증 전 단계(회원/로그인/비번찾기 등)
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+
+                                // ===== 워치 페어링 인증 =====
+                        // 워치에서 최초 로그인할 때는 토큰이 없으므로 pair 엔드포인트는 permitAll
+                        .requestMatchers(HttpMethod.POST, "/api/watch/auth/pair-code").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/watch/auth/pair").permitAll()
+
                         .requestMatchers("/api/auth/**").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/genres", "/api/security-questions").permitAll()
@@ -68,10 +74,6 @@ public class SecurityConfig {
                         // ===== 내부 서비스 간 통신(서버→서버) 결과 수신: 토큰 없음 → permitAll =====
                         .requestMatchers(HttpMethod.POST, "/api/ocr/results").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/stt/results").permitAll()
-
-                        // ===== 워치 페어링 인증 =====
-                        // 워치에서 최초 로그인할 때는 토큰이 없으므로 pair 엔드포인트는 permitAll
-                        .requestMatchers(HttpMethod.POST, "/api/watch/auth/pair").permitAll()
 
                         // ===== 워치용 건강/스트레스 API는 인증 필수 =====
                         .requestMatchers("/api/watch/health/**").authenticated()

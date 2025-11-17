@@ -1,7 +1,6 @@
 package com.fluxion.sote.challenge.service;
 
 import com.fluxion.sote.analysis.entity.AnalysisResult;
-import com.fluxion.sote.analysis.repository.AnalysisResultRepository;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.challenge.entity.UserChallenge;
 import com.fluxion.sote.challenge.repository.UserChallengeRepository;
@@ -20,17 +19,17 @@ public class ChallengeCompleteService {
 
     private final UserChallengeRepository userChallengeRepo;
     private final BadgeService badgeService;
-    private final AnalysisResultRepository analysisResultRepo;
     private final LpRewardService lpRewardService;
 
     /**
      * 오늘 추천된 챌린지 완료 처리 + LP 자동 보상 지급
+     * - 이 챌린지를 추천하게 만든 AnalysisResult의 음악 정보를 사용
      */
     @Transactional
     public LpRewardResponse completeTodayChallenge(User user, Long challengeId) {
         LocalDate today = LocalDate.now();
 
-        // 1️⃣ 오늘 챌린지 검증
+        // 1. 오늘 챌린지 검증
         UserChallenge challenge = userChallengeRepo.findByUserAndDate(user, today)
                 .orElseThrow(() -> new IllegalStateException("오늘 추천된 챌린지가 없습니다."));
 
@@ -41,32 +40,42 @@ public class ChallengeCompleteService {
             throw new IllegalStateException("이미 완료한 챌린지입니다.");
         }
 
-        // 2️⃣ 완료 처리
+        // 2. 완료 처리
         challenge.complete();
 
-        // 3️⃣ 뱃지 발급
+        // 3. 뱃지 발급
         badgeService.checkAndAwardBadges(
                 user,
                 challenge.getChallenge().getEmotionType(),
                 challenge.getChallenge().getCategory()
         );
 
-        // 4️⃣ 최신 분석 결과 조회 → selectedTrack 사용
-        AnalysisResult latest = analysisResultRepo.findTopByAnalysis_User_IdOrderByCreatedAtDesc(user.getId())
-                .orElseThrow(() -> new IllegalStateException("분석 결과가 없습니다."));
+        // 4. 이 챌린지를 추천하게 만든 분석 결과 사용
+        AnalysisResult baseResult = challenge.getAnalysisResult();
+        if (baseResult == null) {
+            throw new IllegalStateException("챌린지에 연결된 분석 결과가 없습니다.");
+        }
 
-        Diary diary = latest.getAnalysis().getDiary();
+        Diary diary = baseResult.getAnalysis().getDiary();
         if (diary == null) {
             throw new IllegalStateException("분석 결과에 연결된 일기가 없습니다.");
         }
 
-        // 5️⃣ LP 지급
+        String title = baseResult.getSelectedTrackTitle();
+        String artist = baseResult.getSelectedTrackArtist();
+        String album = baseResult.getSelectedTrackAlbum();
+
+        if (title == null || artist == null) {
+            throw new IllegalStateException("분석 결과에 선택된 음악 정보가 없습니다.");
+        }
+
+        // 5. LP 지급 (분석 결과에서 나온 그 음악으로)
         return lpRewardService.grantReward(
                 user,
                 diary,
-                latest.getSelectedTrackTitle(),
-                latest.getSelectedTrackArtist(),
-                latest.getSelectedTrackAlbum()
+                title,
+                artist,
+                album
         );
     }
 }

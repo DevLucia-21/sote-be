@@ -5,9 +5,8 @@ import com.fluxion.sote.question.entity.Question;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "question_answers",
@@ -20,20 +19,24 @@ public class QuestionAnswer {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "question_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
     @Column(name = "answer_text", nullable = false, columnDefinition = "text")
     private String answerText;
 
+    /** UTC 기준 답변 작성 시간 */
     @Column(name = "answered_at", nullable = false)
-    private OffsetDateTime answeredAt;
+    private Instant answeredAt;
 
+    /** UTC 기준 수정 시간 */
     @Column(name = "updated_at")
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     /** 해당 월의 첫째 날 (예: 2025-08-01) */
     @Column(name = "answer_month", nullable = false)

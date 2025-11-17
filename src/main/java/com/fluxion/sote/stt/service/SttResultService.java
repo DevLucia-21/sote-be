@@ -30,7 +30,6 @@ public class SttResultService {
 
         //FK 무결성 검증: 존재하지 않는 userId 방지
         if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("존재하지 않는 사용자 ID입니다: " + userId);
         }
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();

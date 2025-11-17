@@ -1,8 +1,8 @@
 package com.fluxion.sote.challenge.service;
 
-import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.analysis.entity.AnalysisResult;
 import com.fluxion.sote.analysis.repository.AnalysisResultRepository;
+import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.challenge.entity.ChallengeDefinition;
 import com.fluxion.sote.challenge.entity.UserChallenge;
 import com.fluxion.sote.challenge.repository.ChallengeDefinitionRepository;
@@ -25,20 +25,25 @@ public class ChallengeRecommendService {
     private final UserChallengeRepository userChallengeRepo;
     private final AnalysisResultRepository analysisResultRepo;
 
+    /**
+     * 오늘의 챌린지 추천
+     * - emotionType이 null이면 최신 분석 결과의 emotionLabel 기반으로 결정
+     * - 추천된 챌린지와 "어떤 분석 결과로 추천되었는지"를 UserChallenge에 함께 저장
+     */
     public ChallengeDefinition recommendTodayChallenge(User user, EmotionType emotionType) {
         LocalDate today = LocalDate.now();
 
-        // 이미 오늘 추천된 챌린지가 있다면 반환 금지
+        // 이미 오늘 추천된 챌린지가 있으면 에러
         userChallengeRepo.findByUserAndDate(user, today).ifPresent(existing -> {
             throw new IllegalStateException("오늘의 챌린지는 이미 추천되었습니다.");
         });
 
-        // 1. 최신 분석 결과 가져오기 (AnalysisResult 기준)
+        // 1. 최신 분석 결과 가져오기
         AnalysisResult latestResult = analysisResultRepo
                 .findTopByAnalysis_User_IdOrderByCreatedAtDesc(user.getId())
                 .orElseThrow(() -> new IllegalStateException("최근 분석 결과가 없습니다."));
 
-        // 2. emotionType이 null이면 최신 결과의 emotionLabel 사용
+        // 2. emotionType이 null이면 분석 결과의 emotionLabel 사용
         if (emotionType == null) {
             emotionType = EmotionType.fromLabel(latestResult.getEmotionLabel());
             if (emotionType == null) {
@@ -46,17 +51,19 @@ public class ChallengeRecommendService {
             }
         }
 
-        // 3. 최근 3일 내 완료한 챌린지 제외
+        // 3. 최근 3일 내 동일 감정 챌린지 제외
         LocalDate threeDaysAgo = today.minusDays(3);
-        List<UserChallenge> recent = userChallengeRepo
+        var recent = userChallengeRepo
                 .findByUserAndChallenge_EmotionTypeAndDateAfter(user, emotionType, threeDaysAgo);
 
         List<Long> excludeIds = recent.stream()
                 .map(rc -> rc.getChallenge().getId())
                 .toList();
 
-        // 4. 후보 챌린지 필터링
-        List<ChallengeDefinition> candidates = definitionRepo.findAllByEmotionTypeAndIsDeletedFalse(emotionType).stream()
+        // 4. 추천 후보 필터링
+        List<ChallengeDefinition> candidates = definitionRepo
+                .findAllByEmotionTypeAndIsDeletedFalse(emotionType)
+                .stream()
                 .filter(ch -> !excludeIds.contains(ch.getId()))
                 .toList();
 
@@ -68,15 +75,16 @@ public class ChallengeRecommendService {
             throw new IllegalStateException("추천 가능한 챌린지가 없습니다.");
         }
 
-        // 5. 랜덤 선택
+        // 5. 랜덤으로 하나 선택
         ChallengeDefinition selected = candidates.get(new Random().nextInt(candidates.size()));
 
-        // 6. 추천 이력 저장
+        // 6. 추천 이력 저장 + 어떤 분석 결과로 추천됐는지 함께 기록
         UserChallenge record = UserChallenge.builder()
                 .user(user)
                 .challenge(selected)
+                .analysisResult(latestResult) // 여기서 연결
                 .date(today)
-                .completed(false) // Lombok Builder에서는 isCompleted → completed
+                .completed(false)
                 .build();
 
         userChallengeRepo.save(record);

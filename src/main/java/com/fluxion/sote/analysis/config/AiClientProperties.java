@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "ai.analysis")
 public class AiClientProperties {
-    private String baseUrl = "http://localhost:8000"; // 예: http://ai.sote.internal
+    private String baseUrl = "https://sote-ai.onrender.com"; // 예: http://ai.sote.internal
     private String endpoint = "/api/analysis/result";
     private int timeoutSeconds = 30;
 

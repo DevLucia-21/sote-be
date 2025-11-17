@@ -31,13 +31,6 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * 감정분석 로직 통합 서비스
- * - AI 서버 호출
- * - 결과 Analysis/AnalysisResult 저장
- * - Diary에 emotionType 무조건 반영
- * - 과거 일기: 챌린지/LP 지급 제외
- */
 @Service
 @RequiredArgsConstructor
 public class AnalysisService {
@@ -49,12 +42,13 @@ public class AnalysisService {
     private final DiaryRepository diaryRepo;
     private final ObjectMapper om = new ObjectMapper();
 
-    // ================================
-    // (1) 수동 분석 실행 (API 호출용)
-    // ================================
+    /**
+     * 한국 날짜 기준 KST 상수
+     */
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
     public AnalysisResponse run(AnalysisRequest req) {
         User user = SecurityUtil.getCurrentUser();
-        ZoneId KST = ZoneId.of("Asia/Seoul");
         LocalDate today = LocalDate.now(KST);
 
         if (req.getDiaryId() == null) {
@@ -66,8 +60,7 @@ public class AnalysisService {
 
         LocalDate targetDate = diary.getDate();
 
-        // --- 과거 일기 ---
-        // 오늘 이전 날짜에 처음 작성된 일기일 경우: 감정 분석 + 음악 추천만 (챌린지·LP 제외)
+        // 과거 일기
         if (!targetDate.isEqual(today)) {
             Analysis a = getOrCreateAnalysis(user, diary, targetDate);
             if (a.getResult() != null) {
@@ -81,8 +74,7 @@ public class AnalysisService {
             return new AnalysisResponse("ok", "past_diary_analysis_only", body);
         }
 
-        // --- 오늘 일기 ---
-        // 오늘 작성된 일기: 감정 분석 + 음악 추천 + 챌린지·LP 지급
+        // 오늘 일기
         Analysis a = getOrCreateAnalysis(user, diary, today);
         if (a.getResult() != null) {
             Map<String, Object> data = new HashMap<>();
@@ -98,29 +90,21 @@ public class AnalysisService {
         return new AnalysisResponse("ok", "success", body);
     }
 
-    // ==================================
-    // (2) 자동 감정분석 실행 (Diary 객체 기반)
-    // ==================================
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void runInNewTx(Diary diary) {
         try {
-            //  Diary를 기반으로 요청 생성
             AnalysisRequest req = new AnalysisRequest();
             req.setDiaryId(diary.getId());
             req.setText(diary.getContent());
 
-            // 로그인 정보 대신 직접 유저 사용
             User user = diary.getUser();
-            ZoneId KST = ZoneId.of("Asia/Seoul");
             LocalDate targetDate = diary.getDate();
 
-            // AI 분석 호출
             Analysis a = getOrCreateAnalysis(user, diary, targetDate);
             Map<String, Object> body = callAiForAnalysis(user, a, req);
             AnalysisResult r = mapResultFromBody(a, body);
             resultRepo.save(r);
 
-            // Diary에 emotionType 강제 반영
             Object emoObj = body.get("emotion");
             if (emoObj instanceof Map<?, ?> emo) {
                 String label = Objects.toString(emo.get("label"), null);
@@ -133,16 +117,12 @@ public class AnalysisService {
                     ", Emotion=" + diary.getEmotionType());
 
         } catch (Exception e) {
-            // 실패해도 일기 저장에는 영향 없음
             System.err.println("자동 감정분석 실패: " +
                     e.getClass().getSimpleName() + " - " +
                     (e.getMessage() != null ? e.getMessage() : "no message"));
         }
     }
 
-    // ================================
-    // (3) 내부 유틸/헬퍼 메서드
-    // ================================
     private Analysis getOrCreateAnalysis(User user, Diary diary, LocalDate date) {
         return analysisRepo.findByUserAndAnalysisDate(user, date)
                 .orElseGet(() -> {
@@ -170,7 +150,8 @@ public class AnalysisService {
 
         ResponseEntity<Map<String, Object>> resp = aiRestTemplate.exchange(
                 url, HttpMethod.POST, new HttpEntity<>(payload, headers),
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
@@ -216,8 +197,7 @@ public class AnalysisService {
         r.setAnalysis(analysis);
 
         Diary diary = analysis.getDiary();
-
-        // --- 감정결과 파싱 ---
+// --- 감정결과 파싱 ---
         Object emoObj = body.get("emotion");
         if (emoObj instanceof Map<?, ?> emo) {
             String label = Objects.toString(emo.get("label"), null);
@@ -234,30 +214,43 @@ public class AnalysisService {
             diary.setEmotionType(type);
             diaryRepo.save(diary);
         }
-
-        // --- 음악 정보 ---
+// --- 음악 정보 ---
         Object musicObj = body.get("music");
         if (musicObj != null) {
             try {
                 r.setMusicJson(om.writeValueAsString(musicObj));
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
-
-        // --- AI 원본 응답 저장 ---
+// --- AI 원본 응답 저장 ---
         try {
             Map<String, Object> toPersist = new HashMap<>(body);
             toPersist.remove("selectedTrack");
             toPersist.remove("selectedTrackIndex");
             r.setAiResponse(om.writeValueAsString(toPersist));
-        } catch (Exception ignore) {}
-
-        // --- 선택곡 저장 ---
+        } catch (Exception ignore) {
+        }
+// --- 선택곡 저장 ---
         Object selectedTrack = body.get("selectedTrack");
         if (selectedTrack instanceof Map<?, ?> track) {
             r.setSelectedTrackTitle(Objects.toString(track.get("title"), null));
             r.setSelectedTrackArtist(Objects.toString(track.get("artist"), null));
             r.setSelectedTrackAlbum(Objects.toString(track.get("album"), null));
             r.setSelectedTrackGenre(Objects.toString(track.get("genre"), null));
+
+            // 🔥 AI가 내려준 추천 이유 / 커버 이미지까지 그대로 저장
+            r.setSelectedTrackReason(Objects.toString(track.get("reason"), null));
+
+            // FastAPI에서 어떤 키 이름 쓸지에 따라 맞춰야 함 (예: "coverImageUrl" 또는 "cover_image_url")
+            r.setSelectedTrackCoverImageUrl(
+                    Objects.toString(track.get("coverImageUrl"), null)
+            );
+        }
+
+// 선택 인덱스도 있으면 저장
+        Object idxObj = body.get("selectedTrackIndex");
+        if (idxObj instanceof Number n) {
+            r.setSelectedTrackIndex(n.intValue());
         }
 
         return r;

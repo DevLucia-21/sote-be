@@ -2,9 +2,8 @@ package com.fluxion.sote.answer.dto;
 
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 public class QuestionAnswerDto {
 
@@ -25,10 +24,10 @@ public class QuestionAnswerDto {
         private Long questionId;
         private String questionContent;
         private String answerText;
-        private OffsetDateTime answeredAt;
+        private Instant answeredAt;
         private LocalDate answerMonth;
         private Integer questionDay;
-        private OffsetDateTime updatedAt;
+        private Instant updatedAt;
     }
 
     /** 월별 내 답변 리스트 최적화용(질문 메타 포함) */
@@ -39,8 +38,8 @@ public class QuestionAnswerDto {
         private String questionContent;
         private Integer questionDay;
         private String answerText;
-        private OffsetDateTime answeredAt;
-        private OffsetDateTime updatedAt;
+        private Instant answeredAt;
+        private Instant updatedAt;
         private LocalDate date;
     }
 }

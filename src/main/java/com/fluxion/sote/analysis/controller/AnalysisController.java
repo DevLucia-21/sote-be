@@ -83,7 +83,10 @@ public class AnalysisController {
         body.put("selectedTrackArtist", result.getSelectedTrackArtist());
         body.put("selectedTrackAlbum", result.getSelectedTrackAlbum());
         body.put("selectedTrackGenre", result.getSelectedTrackGenre());
+        body.put("selectedTrackReason", result.getSelectedTrackReason());
+        body.put("selectedTrackCoverImageUrl", result.getSelectedTrackCoverImageUrl());
 
         return ResponseEntity.ok(body);
+
     }
 }
