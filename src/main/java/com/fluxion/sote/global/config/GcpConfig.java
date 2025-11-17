@@ -21,9 +21,15 @@ public class GcpConfig {
 
     @Bean
     public Storage storage() throws IOException {
+
+        // file: prefix 제거 (중요)
+        String realPath = credentialsPath.replace("file:", "");
+
+        System.out.println("GCP Storage Credentials Path = " + realPath);
+
         return StorageOptions.newBuilder()
                 .setProjectId(projectId)
-                .setCredentials(ServiceAccountCredentials.fromStream(new FileInputStream(credentialsPath)))
+                .setCredentials(ServiceAccountCredentials.fromStream(new FileInputStream(realPath)))
                 .build()
                 .getService();
     }
