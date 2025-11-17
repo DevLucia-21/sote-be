@@ -1,8 +1,10 @@
 package com.fluxion.sote.analysis.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /** FE에서 넘어오는 분석 요청 */
@@ -19,6 +21,11 @@ public class AnalysisRequest {
     @Size(max = 2000)
     private String text;
 
+    /** FE가 보내는 날짜 (중요) */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate date;
+
+    // ===== Getter / Setter =====
     public Long getDiaryId() {
         return diaryId;
     }
@@ -41,5 +48,13 @@ public class AnalysisRequest {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
     }
 }

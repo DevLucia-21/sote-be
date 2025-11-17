@@ -62,7 +62,7 @@ public class AnalysisService {
          * ✨ 핵심 수정: FE에서 넘어온 날짜 기준으로 오늘/과거 판단
          * 서버 today와 mismatch여도 FE가 오늘이라면 '오늘 일기'로 인정
          */
-        boolean isTodayDiary = targetDate.isEqual(today);
+        boolean isTodayDiary = targetDate.equals(req.getDate());
 
         // ======================
         // 과거 일기 처리
