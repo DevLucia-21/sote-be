@@ -27,18 +27,20 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final KeywordStatisticsRepository keywordStatisticsRepository;
 
     @Override
-    public Object getDiaryStats(String period) {
+    public Object getDiaryStats(String period, Integer year, Integer month) {  //수정
         Long userId = SecurityUtil.getCurrentUserId();
 
         if ("overall".equalsIgnoreCase(period)) {
             long totalCount = diaryStatisticsRepository.countTotalByUserId(userId);
             return new DiaryTotalResponse((int) totalCount);
         } else if ("monthly".equalsIgnoreCase(period)) {
-            LocalDate now = LocalDate.now();
+            LocalDate now = LocalDate.now();  // 기존 로직 유지
+            int targetYear = (year != null) ? year : now.getYear();        //수정
+            int targetMonth = (month != null) ? month : now.getMonthValue(); //수정
             long monthlyCount = diaryStatisticsRepository.countMonthlyByUserId(
                     userId,
-                    now.getYear(),
-                    now.getMonthValue()
+                    targetYear,   //수정
+                    targetMonth   //수정
             );
             return new DiaryMonthlyResponse((int) monthlyCount);
         }
@@ -66,15 +68,17 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public ChallengeCompletionResponse getChallengeCompletion(String period) {
+    public ChallengeCompletionResponse getChallengeCompletion(String period, Integer offset) {  //수정
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (!"weekly".equalsIgnoreCase(period)) {
             throw new IllegalArgumentException("Only weekly period supported for challenge completion");
         }
 
-        LocalDate end = LocalDate.now();
-        LocalDate start = end.minusDays(6); // 최근 7일
+        int weekOffset = (offset != null) ? offset : 0;  //수정
+
+        LocalDate end = LocalDate.now().plusWeeks(weekOffset);  //수정
+        LocalDate start = end.minusDays(6); // 최근 7일  //수정
 
         long total = challengeStatisticsRepository.countWeeklyChallenges(userId, start, end);
         long completed = challengeStatisticsRepository.countWeeklyCompleted(userId, start, end);
@@ -132,17 +136,21 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public MusicStatsResponse getMusicStats(String period) {
+    public MusicStatsResponse getMusicStats(String period, Integer year, Integer month) {  //수정
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (!"monthly".equalsIgnoreCase(period)) {
             throw new IllegalArgumentException("Only monthly period supported for music stats");
         }
 
-        // 이번 달 범위
-        LocalDate now = LocalDate.now();
-        OffsetDateTime start = now.withDayOfMonth(1).atStartOfDay().atOffset(ZoneOffset.UTC);
-        OffsetDateTime end = now.withDayOfMonth(now.lengthOfMonth()).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+        LocalDate now = LocalDate.now();  //수정
+        int targetYear = (year != null) ? year : now.getYear();        //수정
+        int targetMonth = (month != null) ? month : now.getMonthValue(); //수정
+        LocalDate targetDate = LocalDate.of(targetYear, targetMonth, 1); //수정
+
+        // 선택된 월 범위
+        OffsetDateTime start = targetDate.withDayOfMonth(1).atStartOfDay().atOffset(ZoneOffset.UTC);  //수정
+        OffsetDateTime end = targetDate.withDayOfMonth(targetDate.lengthOfMonth()).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);  //수정
 
         long monthlyCount = musicStatisticsRepository.countMonthlyRecommendedTracks(userId, start, end);
 
@@ -162,12 +170,15 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public KeywordRankingResponse getKeywordRanking(String period) {
+    public KeywordRankingResponse getKeywordRanking(String period, Integer year, Integer month) {  //수정
         Long userId = SecurityUtil.getCurrentUserId();
 
-        LocalDate now = LocalDate.now();
-        LocalDate start = now.withDayOfMonth(1);
-        LocalDate end = now.withDayOfMonth(now.lengthOfMonth());
+        LocalDate now = LocalDate.now();  //수정
+        int targetYear = (year != null) ? year : now.getYear();        //수정
+        int targetMonth = (month != null) ? month : now.getMonthValue(); //수정
+
+        LocalDate start = LocalDate.of(targetYear, targetMonth, 1);  //수정
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());  //수정
 
         List<Object[]> topKeywordsRaw = keywordStatisticsRepository.findTopKeywordsMonthly(userId, start, end);
 

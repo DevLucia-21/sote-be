@@ -16,8 +16,12 @@ public class StatisticsController {
 
     // 1) 일기
     @GetMapping("/diary")
-    public ResponseEntity<?> getDiaryStats(@RequestParam String period) {
-        return ResponseEntity.ok(statisticsService.getDiaryStats(period));
+    public ResponseEntity<?> getDiaryStats(
+            @RequestParam String period,
+            @RequestParam(required = false) Integer year,  //수정
+            @RequestParam(required = false) Integer month  //수정
+    ) {
+        return ResponseEntity.ok(statisticsService.getDiaryStats(period, year, month));  //수정
     }
 
     // 2) 감정 분석
@@ -28,8 +32,11 @@ public class StatisticsController {
 
     // 3) 챌린지
     @GetMapping("/challenges/completion-rate")
-    public ResponseEntity<ChallengeCompletionResponse> getChallengeCompletion(@RequestParam String period) {
-        return ResponseEntity.ok(statisticsService.getChallengeCompletion(period));
+    public ResponseEntity<ChallengeCompletionResponse> getChallengeCompletion(
+            @RequestParam String period,
+            @RequestParam(required = false) Integer offset  //수정
+    ) {
+        return ResponseEntity.ok(statisticsService.getChallengeCompletion(period, offset));  //수정
     }
 
     @GetMapping("/challenges/emotion-performance")
@@ -47,14 +54,22 @@ public class StatisticsController {
 
     // 4) 음악
     @GetMapping("/music")
-    public ResponseEntity<MusicStatsResponse> getMusicStats(@RequestParam String period) {
-        return ResponseEntity.ok(statisticsService.getMusicStats(period));
+    public ResponseEntity<MusicStatsResponse> getMusicStats(
+            @RequestParam String period,
+            @RequestParam(required = false) Integer year,  //수정
+            @RequestParam(required = false) Integer month  //수정
+    ) {
+        return ResponseEntity.ok(statisticsService.getMusicStats(period, year, month));  //수정
     }
 
     // 5) 키워드
     @GetMapping("/keywords/ranking")
-    public ResponseEntity<KeywordRankingResponse> getKeywordRanking(@RequestParam String period) {
-        return ResponseEntity.ok(statisticsService.getKeywordRanking(period));
+    public ResponseEntity<KeywordRankingResponse> getKeywordRanking(
+            @RequestParam String period,
+            @RequestParam(required = false) Integer year,  //수정
+            @RequestParam(required = false) Integer month  //수정
+    ) {
+        return ResponseEntity.ok(statisticsService.getKeywordRanking(period, year, month));  //수정
     }
 
     @GetMapping("/keywords/emotion-ranking")
