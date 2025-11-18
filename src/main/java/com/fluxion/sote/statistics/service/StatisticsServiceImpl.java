@@ -30,22 +30,42 @@ public class StatisticsServiceImpl implements StatisticsService {
     public Object getDiaryStats(String period) {
         Long userId = SecurityUtil.getCurrentUserId();
 
+        // ==========================
+        // 1) 전체 조회
+        // ==========================
         if ("overall".equalsIgnoreCase(period)) {
             long totalCount = diaryStatisticsRepository.countTotalByUserId(userId);
             return new DiaryTotalResponse((int) totalCount);
-        } else if ("monthly".equalsIgnoreCase(period)) {
-            LocalDate now = LocalDate.now();
+        }
 
+        // ==========================
+        // 2) 이번 달 조회 (기존 monthly)
+        // ==========================
+        if ("monthly".equalsIgnoreCase(period)) {
+            LocalDate now = LocalDate.now();
             long monthlyCount = diaryStatisticsRepository.countMonthlyByUserId(
                     userId,
                     now.getYear(),
                     now.getMonthValue()
             );
-
             return new DiaryMonthlyResponse((int) monthlyCount);
         }
 
-        throw new IllegalArgumentException("Invalid period: " + period);
+        // ==========================
+        // 3) 특정 월 조회 (NEW)
+        // 예: period = "2025-10"
+        // ==========================
+        try {
+            YearMonth target = YearMonth.parse(period); // yyyy-MM 형식
+            int year = target.getYear();
+            int month = target.getMonthValue();
+
+            long count = diaryStatisticsRepository.countMonthlyByUserId(userId, year, month);
+            return new DiaryMonthlyResponse((int) count);
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid period: " + period);
+        }
     }
 
     @Override
