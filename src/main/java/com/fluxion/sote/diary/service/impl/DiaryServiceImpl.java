@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 
@@ -30,6 +31,8 @@ public class DiaryServiceImpl implements DiaryService {
     private final AnalysisService analysisService;
     private final ApplicationEventPublisher publisher;
 
+    // 🔥 한국 기준 오늘 날짜 계산용 KST 타임존
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     //사용자 소유 키워드만 검증
     //키워드 개수 제한: 작성 시 최대 5개
@@ -49,12 +52,15 @@ public class DiaryServiceImpl implements DiaryService {
 
         return Set.copyOf(keywords);
     }
+
     // ================== TEXT / STT 저장 ==================
     @Override
     @Transactional
     public DiaryDto write(User user, String content, LocalDate date,
                           WriteType writeType, List<Long> keywordIds, EmotionType emotionType) {
-        if (date.isAfter(LocalDate.now())) {
+
+        LocalDate todayKst = LocalDate.now(KST);
+        if (date.isAfter(todayKst)) {
             throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
         }
 
@@ -93,7 +99,9 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto writeOcr(User user, String content, String imageUrl, LocalDate date,
                              List<Long> keywordIds, EmotionType emotionType) {
-        if (date.isAfter(LocalDate.now())) {
+
+        LocalDate todayKst = LocalDate.now(KST);
+        if (date.isAfter(todayKst)) {
             throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
         }
 
@@ -126,7 +134,9 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto update(User user, LocalDate date, String content,
                            List<Long> keywordIds, EmotionType emotionType) {
-        if (date.isAfter(LocalDate.now())) {
+
+        LocalDate todayKst = LocalDate.now(KST);
+        if (date.isAfter(todayKst)) {
             throw new IllegalArgumentException("미래 일기는 수정할 수 없습니다.");
         }
 
@@ -251,8 +261,13 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public DiaryDto writeCanvas(User user, String content, String canvasImageBase64,
                                 LocalDate date, List<Long> keywordIds, EmotionType emotionType) {
-        if (date == null) date = LocalDate.now();
-        if (date.isAfter(LocalDate.now())) {
+
+        if (date == null) {
+            date = LocalDate.now(KST);
+        }
+
+        LocalDate todayKst = LocalDate.now(KST);
+        if (date.isAfter(todayKst)) {
             throw new IllegalArgumentException("미래 일기는 작성할 수 없습니다.");
         }
 

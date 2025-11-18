@@ -14,8 +14,8 @@ public class DateTimeConfig {
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {
         return builder -> builder
-                .timeZone(TimeZone.getTimeZone("Asia/Seoul"))
-                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                .modulesToInstall(new JavaTimeModule());  //LocalDate / LocalDateTime 지원
+                .modulesToInstall(new JavaTimeModule())  //LocalDate / LocalDateTime 지원
+                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
     }
 }
