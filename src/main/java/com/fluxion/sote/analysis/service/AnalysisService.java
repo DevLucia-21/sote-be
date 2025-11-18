@@ -146,12 +146,6 @@ public class AnalysisService {
     }
 
     private Map<String, Object> callAiForAnalysis(User user, Analysis analysis, AnalysisRequest req) {
-
-        // 🔥 Cloudflare rate-limit 우회용 딜레이 (0.3초)
-        try {
-            Thread.sleep(300);
-        } catch (InterruptedException ignored) {}
-
         Map<String, Object> payload = new HashMap<>();
         payload.put("text", req != null ? req.getText() : null);
         payload.put("year", analysis.getBirthYear());
@@ -160,17 +154,12 @@ public class AnalysisService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
-        //Cloudflare bot-detection 방지용 헤더 추가
-        headers.add("User-Agent", "Sote-Backend/1.0");
-        headers.add("Accept", "application/json");
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         String url = props.getBaseUrl() + props.getEndpoint();
 
         ResponseEntity<Map<String, Object>> resp = aiRestTemplate.exchange(
-                url,
-                HttpMethod.POST,
-                new HttpEntity<>(payload, headers),
+                url, HttpMethod.POST, new HttpEntity<>(payload, headers),
                 new ParameterizedTypeReference<>() {}
         );
 
