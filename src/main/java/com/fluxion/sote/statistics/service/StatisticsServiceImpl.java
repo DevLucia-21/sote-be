@@ -8,10 +8,7 @@ import com.fluxion.sote.statistics.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.YearMonth;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -186,21 +183,23 @@ public class StatisticsServiceImpl implements StatisticsService {
         // ==========================
         YearMonth target;
         try {
-            target = YearMonth.parse(month); // ex) 2025-11
+            target = YearMonth.parse(month);  // 예: 2025-11
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid month format: " + month);
         }
 
-        OffsetDateTime start = target.atDay(1).atStartOfDay().atOffset(ZoneOffset.UTC);
-        OffsetDateTime end = target.atEndOfMonth().atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+        // LocalDateTime으로 시작/끝 계산 (DB createdAt과 타입 동일)
+        LocalDateTime start = target.atDay(1).atStartOfDay();
+        LocalDateTime end = target.atEndOfMonth().atTime(23, 59, 59);
 
-        // 이번 달 추천 음악 수
+        // 월간 추천 음악 수
         long monthlyCount = musicStatisticsRepository.countMonthlyRecommendedTracks(
                 userId, start, end
         );
 
-        // 감정 → 장르 → count 매핑
-        List<Object[]> results = musicStatisticsRepository.countEmotionGenreMappingMonthly(userId, start, end);
+        // 월간 감정별 → 장르 매핑
+        List<Object[]> results =
+                musicStatisticsRepository.countEmotionGenreMappingMonthly(userId, start, end);
 
         Map<String, Map<String, Long>> mapping = new HashMap<>();
 

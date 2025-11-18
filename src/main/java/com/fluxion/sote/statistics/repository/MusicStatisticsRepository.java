@@ -5,12 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface MusicStatisticsRepository extends JpaRepository<AnalysisResult, Long> {
 
-    // 월간 추천된 곡 개수
+    // 월간 추천된 곡 개수 (LocalDateTime으로 통일)
     @Query("""
             SELECT COUNT(ar)
             FROM AnalysisResult ar
@@ -21,23 +21,23 @@ public interface MusicStatisticsRepository extends JpaRepository<AnalysisResult,
             """)
     long countMonthlyRecommendedTracks(
             @Param("userId") Long userId,
-            @Param("start") OffsetDateTime start,
-            @Param("end") OffsetDateTime end
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
     );
 
-    //월간 감정 → 장르 매핑 (MONTH 필터 적용된 버전)
+    // 월간 감정 → 장르 매핑 (LocalDateTime 통일)
     @Query("""
-            SELECT ar.emotionLabel, ar.selectedTrackGenre, COUNT(ar)
-            FROM AnalysisResult ar
-            JOIN ar.analysis a
-            WHERE a.user.id = :userId
-              AND ar.selectedTrackGenre IS NOT NULL
-              AND ar.createdAt BETWEEN :start AND :end
-            GROUP BY ar.emotionLabel, ar.selectedTrackGenre
-            """)
+        SELECT ar.emotionLabel, ar.selectedTrackGenre, COUNT(ar)
+        FROM AnalysisResult ar
+        JOIN ar.analysis a
+        WHERE a.user.id = :userId
+          AND ar.selectedTrackGenre IS NOT NULL
+          AND ar.createdAt BETWEEN :start AND :end
+        GROUP BY ar.emotionLabel, ar.selectedTrackGenre
+        """)
     List<Object[]> countEmotionGenreMappingMonthly(
             @Param("userId") Long userId,
-            @Param("start") OffsetDateTime start,
-            @Param("end") OffsetDateTime end
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
     );
 }
