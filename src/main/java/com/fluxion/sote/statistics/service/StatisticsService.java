@@ -6,7 +6,7 @@ public interface StatisticsService {
     Object getDiaryStats(String period, String month);
     AnalysisStatsResponse getAnalysisStats(String period);
 
-    ChallengeCompletionResponse getChallengeCompletion(String period);
+    ChallengeCompletionResponse getChallengeCompletion(String period, String startDate);
     ChallengeEmotionPerformanceResponse getChallengeEmotionPerformance(String period, String month);
     ChallengeBadgeResponse getChallengeBadges(String period);
 

@@ -1,5 +1,6 @@
 package com.fluxion.sote.statistics.controller;
 
+import com.fluxion.sote.global.util.SecurityUtil;
 import com.fluxion.sote.statistics.dto.ChallengeBadgeResponse;
 import com.fluxion.sote.statistics.dto.*;
 import com.fluxion.sote.statistics.service.StatisticsService;
@@ -31,8 +32,13 @@ public class StatisticsController {
 
     // 3) 챌린지
     @GetMapping("/challenges/completion-rate")
-    public ResponseEntity<ChallengeCompletionResponse> getChallengeCompletion(@RequestParam String period) {
-        return ResponseEntity.ok(statisticsService.getChallengeCompletion(period));
+    public ResponseEntity<ChallengeCompletionResponse> getChallengeCompletion(
+            @RequestParam String period,
+            @RequestParam String start
+    ) {
+        return ResponseEntity.ok(
+                statisticsService.getChallengeCompletion(period, start)
+        );
     }
 
     @GetMapping("/challenges/emotion-performance")

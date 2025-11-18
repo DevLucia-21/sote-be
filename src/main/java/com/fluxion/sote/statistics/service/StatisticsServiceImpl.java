@@ -98,15 +98,22 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public ChallengeCompletionResponse getChallengeCompletion(String period) {
+    public ChallengeCompletionResponse getChallengeCompletion(String period, String startDate) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (!"weekly".equalsIgnoreCase(period)) {
             throw new IllegalArgumentException("Only weekly period supported for challenge completion");
         }
 
-        LocalDate end = LocalDate.now();
-        LocalDate start = end.minusDays(6); // 최근 7일
+        // 주 시작일을 프론트에서 받아 사용
+        LocalDate start;
+        try {
+            start = LocalDate.parse(startDate); // 예: 2025-11-03
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid start date: " + startDate);
+        }
+
+        LocalDate end = start.plusDays(6);
 
         long total = challengeStatisticsRepository.countWeeklyChallenges(userId, start, end);
         long completed = challengeStatisticsRepository.countWeeklyCompleted(userId, start, end);
