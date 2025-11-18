@@ -27,7 +27,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final KeywordStatisticsRepository keywordStatisticsRepository;
 
     @Override
-    public Object getDiaryStats(String period) {
+    public Object getDiaryStats(String period, String month) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         // ==========================
@@ -39,33 +39,43 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         // ==========================
-        // 2) 이번 달 조회 (기존 monthly)
+        // 2) 특정 월 조회 (yyyy-MM)
+        // ==========================
+        if (month != null && !month.isBlank()) {
+            try {
+                YearMonth target = YearMonth.parse(month); // ex) "2025-10"
+                int year = target.getYear();
+                int monthValue = target.getMonthValue();
+
+                long count = diaryStatisticsRepository.countMonthlyByUserId(
+                        userId,
+                        year,
+                        monthValue
+                );
+
+                return new DiaryMonthlyResponse((int) count);
+
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid month format: " + month);
+            }
+        }
+
+        // ==========================
+        // 3) fallback: 이번 달 조회
         // ==========================
         if ("monthly".equalsIgnoreCase(period)) {
             LocalDate now = LocalDate.now();
+
             long monthlyCount = diaryStatisticsRepository.countMonthlyByUserId(
                     userId,
                     now.getYear(),
                     now.getMonthValue()
             );
+
             return new DiaryMonthlyResponse((int) monthlyCount);
         }
 
-        // ==========================
-        // 3) 특정 월 조회 (NEW)
-        // 예: period = "2025-10"
-        // ==========================
-        try {
-            YearMonth target = YearMonth.parse(period); // yyyy-MM 형식
-            int year = target.getYear();
-            int month = target.getMonthValue();
-
-            long count = diaryStatisticsRepository.countMonthlyByUserId(userId, year, month);
-            return new DiaryMonthlyResponse((int) count);
-
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid period: " + period);
-        }
+        throw new IllegalArgumentException("Invalid period: " + period);
     }
 
     @Override
