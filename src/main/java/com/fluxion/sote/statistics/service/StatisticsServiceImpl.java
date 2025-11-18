@@ -188,9 +188,16 @@ public class StatisticsServiceImpl implements StatisticsService {
             throw new IllegalArgumentException("Invalid month format: " + month);
         }
 
-        // LocalDateTime으로 시작/끝 계산 (DB createdAt과 타입 동일)
-        LocalDateTime start = target.atDay(1).atStartOfDay();
-        LocalDateTime end = target.atEndOfMonth().atTime(23, 59, 59);
+        // createdAt이 +09:00(timestamptz)이므로 OffsetDateTime +09:00으로 맞추기
+        ZoneOffset KST = ZoneOffset.ofHours(9);
+
+        OffsetDateTime start = target.atDay(1)
+                .atStartOfDay()
+                .atOffset(KST);
+
+        OffsetDateTime end = target.atEndOfMonth()
+                .atTime(23, 59, 59)
+                .atOffset(KST);
 
         // 월간 추천 음악 수
         long monthlyCount = musicStatisticsRepository.countMonthlyRecommendedTracks(
