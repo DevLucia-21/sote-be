@@ -50,14 +50,20 @@ public class StatisticsController {
 
     // 4) 음악
     @GetMapping("/music")
-    public ResponseEntity<MusicStatsResponse> getMusicStats(@RequestParam String period) {
-        return ResponseEntity.ok(statisticsService.getMusicStats(period));
+    public ResponseEntity<?> getMusicStats(
+            @RequestParam String period,
+            @RequestParam String month
+    ) {
+        return ResponseEntity.ok(statisticsService.getMusicStats(period, month));
     }
 
     // 5) 키워드
     @GetMapping("/keywords/ranking")
-    public ResponseEntity<KeywordRankingResponse> getKeywordRanking(@RequestParam String period) {
-        return ResponseEntity.ok(statisticsService.getKeywordRanking(period));
+    public ResponseEntity<?> getKeywordRanking(
+            @RequestParam String period,
+            @RequestParam String month
+    ) {
+        return ResponseEntity.ok(statisticsService.getKeywordRanking(period, month));
     }
 
     @GetMapping("/keywords/emotion-ranking")

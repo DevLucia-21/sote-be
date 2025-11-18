@@ -167,20 +167,32 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public MusicStatsResponse getMusicStats(String period) {
+    public MusicStatsResponse getMusicStats(String period, String month) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (!"monthly".equalsIgnoreCase(period)) {
             throw new IllegalArgumentException("Only monthly period supported for music stats");
         }
 
-        // 이번 달 범위
-        LocalDate now = LocalDate.now();
-        OffsetDateTime start = now.withDayOfMonth(1).atStartOfDay().atOffset(ZoneOffset.UTC);
-        OffsetDateTime end = now.withDayOfMonth(now.lengthOfMonth()).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+        // ==========================
+        // 특정 월 조회 (yyyy-MM)
+        // ==========================
+        YearMonth target;
+        try {
+            target = YearMonth.parse(month); // ex) 2025-11
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid month format: " + month);
+        }
 
-        long monthlyCount = musicStatisticsRepository.countMonthlyRecommendedTracks(userId, start, end);
+        OffsetDateTime start = target.atDay(1).atStartOfDay().atOffset(ZoneOffset.UTC);
+        OffsetDateTime end = target.atEndOfMonth().atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
 
+        // 이번 달 추천 음악 수
+        long monthlyCount = musicStatisticsRepository.countMonthlyRecommendedTracks(
+                userId, start, end
+        );
+
+        // 감정 → 장르 → count 매핑
         List<Object[]> results = musicStatisticsRepository.countEmotionGenreMapping(userId);
 
         Map<String, Map<String, Long>> mapping = new HashMap<>();
@@ -198,12 +210,25 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public KeywordRankingResponse getKeywordRanking(String period) {
+    public KeywordRankingResponse getKeywordRanking(String period, String month) {
         Long userId = SecurityUtil.getCurrentUserId();
 
-        LocalDate now = LocalDate.now();
-        LocalDate start = now.withDayOfMonth(1);
-        LocalDate end = now.withDayOfMonth(now.lengthOfMonth());
+        if (!"monthly".equalsIgnoreCase(period)) {
+            throw new IllegalArgumentException("Only monthly period supported for keyword ranking");
+        }
+
+        // ================
+        // 특정 월 조회
+        // ================
+        YearMonth target;
+        try {
+            target = YearMonth.parse(month);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid month format: " + month);
+        }
+
+        LocalDate start = target.atDay(1);
+        LocalDate end = target.atEndOfMonth();
 
         List<Object[]> topKeywordsRaw =
                 keywordStatisticsRepository.findTopKeywordsMonthly(userId, start, end);

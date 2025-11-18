@@ -10,9 +10,9 @@ public interface StatisticsService {
     ChallengeEmotionPerformanceResponse getChallengeEmotionPerformance(String period, String month);
     ChallengeBadgeResponse getChallengeBadges(String period);
 
-    MusicStatsResponse getMusicStats(String period);
+    MusicStatsResponse getMusicStats(String period, String month);
 
-    KeywordRankingResponse getKeywordRanking(String period);
+    KeywordRankingResponse getKeywordRanking(String period, String month);
     KeywordEmotionRankingResponse getKeywordEmotionRanking(String period);
     KeywordExploreResponse getKeywordExplore(String period);
 }
