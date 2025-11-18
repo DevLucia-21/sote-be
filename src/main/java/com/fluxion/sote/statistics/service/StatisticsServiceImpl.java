@@ -84,20 +84,20 @@ public class StatisticsServiceImpl implements StatisticsService {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (!"weekly".equalsIgnoreCase(period)) {
-            throw new IllegalArgumentException("Weekly only");
+            throw new IllegalArgumentException("Only weekly period supported");
         }
 
-        LocalDate base = (week != null)
-                ? LocalDate.parse(week)
-                : LocalDate.now(ZONE_SEOUL);
+        // week 파라미터로 특정 주 선택 가능
+        LocalDate base = (week != null) ? LocalDate.parse(week) : LocalDate.now();
 
-        LocalDate start = base.minusDays(base.getDayOfWeek().getValue() - 1);   // 월요일
-        LocalDate end = start.plusDays(6);                                      // 일요일
+        // 해당 주의 월~일 계산
+        LocalDate start = base.minusDays(base.getDayOfWeek().getValue() - 1);
+        LocalDate end = start.plusDays(6);
 
         long total = challengeStatisticsRepository.countWeeklyChallenges(userId, start, end);
         long completed = challengeStatisticsRepository.countWeeklyCompleted(userId, start, end);
 
-        double rate = (total == 0) ? 0.0 : (double) completed / total;
+        double rate = (total == 0) ? 0 : (double) completed / total;
 
         return new ChallengeCompletionResponse(total, completed, rate);
     }
