@@ -204,11 +204,15 @@ public class AnalysisService {
     }
 
     private AnalysisResult mapResultFromBody(Analysis analysis, Map<String, Object> body) {
+
         AnalysisResult r = new AnalysisResult();
         r.setAnalysis(analysis);
 
         Diary diary = analysis.getDiary();
 
+        /** -----------------------------
+         * 1) 감정 정보 저장
+         * ----------------------------- */
         Object emoObj = body.get("emotion");
         if (emoObj instanceof Map<?, ?> emo) {
             String label = Objects.toString(emo.get("label"), null);
@@ -216,8 +220,10 @@ public class AnalysisService {
 
             Object score = emo.get("score");
             if (score instanceof Number n) {
-                r.setEmotionScore(BigDecimal.valueOf(n.doubleValue()).setScale(4, RoundingMode.HALF_UP));
+                r.setEmotionScore(BigDecimal.valueOf(n.doubleValue())
+                        .setScale(4, RoundingMode.HALF_UP));
             }
+
             r.setEmotionReason(Objects.toString(emo.get("reason"), null));
 
             EmotionType type = EmotionType.fromLabel(label);
@@ -225,20 +231,31 @@ public class AnalysisService {
             diaryRepo.save(diary);
         }
 
+        /** -----------------------------
+         * 2) 음악 전체 목록 저장
+         * ----------------------------- */
         Object musicObj = body.get("music");
         if (musicObj != null) {
             try {
-                r.setMusicJson(om.writeValueAsString(musicObj));
-            } catch (Exception ignore) {}
+                r.setMusicJson(om.writeValueAsString(musicObj)); // FE에서 필요함
+            } catch (Exception ignored) {}
         }
 
+        /** -----------------------------
+         * 3) AI 전체 응답 그대로 저장 (DB용)
+         *    selectedTrack 제외 → DB 최적화 목적
+         * ----------------------------- */
         try {
             Map<String, Object> toPersist = new HashMap<>(body);
+            // DB에는 필요 없는 selectedTrack만 제거
             toPersist.remove("selectedTrack");
             toPersist.remove("selectedTrackIndex");
             r.setAiResponse(om.writeValueAsString(toPersist));
-        } catch (Exception ignore) {}
+        } catch (Exception ignored) {}
 
+        /** -----------------------------
+         * 4) 선택된 음악 정보 저장 + cover 보강
+         * ----------------------------- */
         Object selectedTrack = body.get("selectedTrack");
         if (selectedTrack instanceof Map<?, ?> track) {
 
@@ -251,7 +268,7 @@ public class AnalysisService {
             r.setSelectedTrackGenre(Objects.toString(track.get("genre"), null));
             r.setSelectedTrackReason(Objects.toString(track.get("reason"), null));
 
-            // AI 응답에 coverImageUrl 없어 null이면 → Spotify로 보강
+            // cover URL이 없으면 Spotify 검색으로 보강
             String cover = Objects.toString(track.get("coverImageUrl"), null);
             if (cover == null && title != null && artist != null) {
                 Map<String, String> trackInfo = spotifyService.searchTrack(title, artist);
@@ -261,6 +278,9 @@ public class AnalysisService {
             r.setSelectedTrackCoverImageUrl(cover);
         }
 
+        /** -----------------------------
+         * 5) 선택된 트랙 인덱스 저장
+         * ----------------------------- */
         Object idxObj = body.get("selectedTrackIndex");
         if (idxObj instanceof Number n) {
             r.setSelectedTrackIndex(n.intValue());
@@ -268,4 +288,5 @@ public class AnalysisService {
 
         return r;
     }
+
 }
