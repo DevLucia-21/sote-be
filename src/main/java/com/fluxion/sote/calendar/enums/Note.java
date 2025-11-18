@@ -31,7 +31,7 @@ public enum Note {
 
             // ANGER
             case "ANGER":
-            case "화남":
+            case "분노":
                 return score < threshold ? SI : HSI;
 
             // JOY
