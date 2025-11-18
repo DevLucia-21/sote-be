@@ -15,6 +15,7 @@ import com.fluxion.sote.diary.repository.DiaryRepository;
 import com.fluxion.sote.global.enums.EmotionType;
 import com.fluxion.sote.global.util.BirthYearUtil;
 import com.fluxion.sote.global.util.SecurityUtil;
+import com.fluxion.sote.lpmusic.service.SpotifyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
@@ -41,6 +42,7 @@ public class AnalysisService {
     private final AnalysisResultRepository resultRepo;
     private final DiaryRepository diaryRepo;
     private final ObjectMapper om = new ObjectMapper();
+    private final SpotifyService spotifyService;
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
@@ -239,12 +241,24 @@ public class AnalysisService {
 
         Object selectedTrack = body.get("selectedTrack");
         if (selectedTrack instanceof Map<?, ?> track) {
-            r.setSelectedTrackTitle(Objects.toString(track.get("title"), null));
-            r.setSelectedTrackArtist(Objects.toString(track.get("artist"), null));
+
+            String title = Objects.toString(track.get("title"), null);
+            String artist = Objects.toString(track.get("artist"), null);
+
+            r.setSelectedTrackTitle(title);
+            r.setSelectedTrackArtist(artist);
             r.setSelectedTrackAlbum(Objects.toString(track.get("album"), null));
             r.setSelectedTrackGenre(Objects.toString(track.get("genre"), null));
             r.setSelectedTrackReason(Objects.toString(track.get("reason"), null));
-            r.setSelectedTrackCoverImageUrl(Objects.toString(track.get("coverImageUrl"), null));
+
+            // AI 응답에 coverImageUrl 없어 null이면 → Spotify로 보강
+            String cover = Objects.toString(track.get("coverImageUrl"), null);
+            if (cover == null && title != null && artist != null) {
+                Map<String, String> trackInfo = spotifyService.searchTrack(title, artist);
+                cover = trackInfo.get("albumImageUrl");
+            }
+
+            r.setSelectedTrackCoverImageUrl(cover);
         }
 
         Object idxObj = body.get("selectedTrackIndex");
