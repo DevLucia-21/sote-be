@@ -11,21 +11,33 @@ import java.util.List;
 public interface MusicStatisticsRepository extends JpaRepository<AnalysisResult, Long> {
 
     // 월간 추천된 곡 개수
-    @Query("SELECT COUNT(ar) FROM AnalysisResult ar " +
-            "JOIN ar.analysis a " +
-            "WHERE a.user.id = :userId " +
-            "AND ar.selectedTrackTitle IS NOT NULL " +
-            "AND ar.createdAt BETWEEN :start AND :end")
-    long countMonthlyRecommendedTracks(@Param("userId") Long userId,
-                                       @Param("start") OffsetDateTime start,
-                                       @Param("end") OffsetDateTime end);
+    @Query("""
+            SELECT COUNT(ar)
+            FROM AnalysisResult ar
+            JOIN ar.analysis a
+            WHERE a.user.id = :userId
+              AND ar.selectedTrackTitle IS NOT NULL
+              AND ar.createdAt BETWEEN :start AND :end
+            """)
+    long countMonthlyRecommendedTracks(
+            @Param("userId") Long userId,
+            @Param("start") OffsetDateTime start,
+            @Param("end") OffsetDateTime end
+    );
 
-    // 감정별 음악 매칭 (감정 → 장르 분포)
-    @Query("SELECT ar.emotionLabel, ar.selectedTrackGenre, COUNT(ar) " +
-            "FROM AnalysisResult ar " +
-            "JOIN ar.analysis a " +
-            "WHERE a.user.id = :userId " +
-            "AND ar.selectedTrackGenre IS NOT NULL " +
-            "GROUP BY ar.emotionLabel, ar.selectedTrackGenre")
-    List<Object[]> countEmotionGenreMapping(@Param("userId") Long userId);
+    //월간 감정 → 장르 매핑 (MONTH 필터 적용된 버전)
+    @Query("""
+            SELECT ar.emotionLabel, ar.selectedTrackGenre, COUNT(ar)
+            FROM AnalysisResult ar
+            JOIN ar.analysis a
+            WHERE a.user.id = :userId
+              AND ar.selectedTrackGenre IS NOT NULL
+              AND ar.createdAt BETWEEN :start AND :end
+            GROUP BY ar.emotionLabel, ar.selectedTrackGenre
+            """)
+    List<Object[]> countEmotionGenreMappingMonthly(
+            @Param("userId") Long userId,
+            @Param("start") OffsetDateTime start,
+            @Param("end") OffsetDateTime end
+    );
 }

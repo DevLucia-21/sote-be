@@ -200,7 +200,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         );
 
         // 감정 → 장르 → count 매핑
-        List<Object[]> results = musicStatisticsRepository.countEmotionGenreMapping(userId);
+        List<Object[]> results = musicStatisticsRepository.countEmotionGenreMappingMonthly(userId, start, end);
 
         Map<String, Map<String, Long>> mapping = new HashMap<>();
 
