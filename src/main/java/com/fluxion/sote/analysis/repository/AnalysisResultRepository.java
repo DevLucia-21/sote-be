@@ -33,4 +33,6 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
 
     //특정일기에 연결된 분석 결과 조회
     Optional<AnalysisResult> findByAnalysis_Diary(Diary diary);
+
+    Optional<AnalysisResult> findTopByAnalysis_DiaryOrderByIdDesc(Diary diary);
 }

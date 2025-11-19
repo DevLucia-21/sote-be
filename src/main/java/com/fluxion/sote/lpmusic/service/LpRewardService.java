@@ -1,5 +1,6 @@
 package com.fluxion.sote.lpmusic.service;
 
+import com.fluxion.sote.analysis.repository.AnalysisResultRepository;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.diary.entity.Diary;
 import com.fluxion.sote.lpmusic.dto.LpRewardResponse;
@@ -19,6 +20,7 @@ public class LpRewardService {
 
     private final LpRewardRepository lpRewardRepo;
     private final SpotifyService spotifyService;
+    private final AnalysisResultRepository resultRepo;
 
     /**
      * LP 자동 지급 (Spotify 기반)

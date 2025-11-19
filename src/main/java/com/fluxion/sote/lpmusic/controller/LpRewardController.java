@@ -20,22 +20,15 @@ public class LpRewardController {
 
     private final LpRewardService rewardService;
 
-    /**
-     * 기존 기본 LP 정보 조회 (단순)
-     */
     @GetMapping("/today")
     public ResponseEntity<LpRewardResponse> getTodayReward(@RequestAttribute("user") User user) {
         return ResponseEntity.ok(rewardService.getTodayReward(user));
     }
 
-    /**
-     * 🟩 새로운 Rich 정보 포함된 LP 조회 엔드포인트
-     * FE에서 원래 보던 감정색/음악 추천 이유/장르/커버 이미지를 모두 반환
-     */
     @GetMapping("/today/detail")
     public ResponseEntity<Map<String, Object>> getTodayRewardDetail(
             @RequestAttribute("user") User user) {
-        return ResponseEntity.ok(rewardService.getTodayRewardWithRichInfo(user));
+        return ResponseEntity.ok(rewardService.getTodayRewardDetail(user));
     }
 
     @GetMapping("/weekly")

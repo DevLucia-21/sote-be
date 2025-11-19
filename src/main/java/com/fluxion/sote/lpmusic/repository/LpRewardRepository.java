@@ -21,6 +21,4 @@ public interface LpRewardRepository extends JpaRepository<LpReward, Long> {
     );
 
     List<LpReward> findAllByUserOrderByRecommendedAtDesc(User user);
-
-    Optional<AnalysisResult> findTopByAnalysis_DiaryOrderByIdDesc(Diary diary);
 }
