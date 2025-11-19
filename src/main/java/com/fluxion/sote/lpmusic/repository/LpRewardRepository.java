@@ -1,5 +1,7 @@
 package com.fluxion.sote.lpmusic.repository;
 
+import com.fluxion.sote.analysis.entity.AnalysisResult;
+import com.fluxion.sote.diary.entity.Diary;
 import com.fluxion.sote.lpmusic.entity.LpReward;
 import com.fluxion.sote.auth.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +21,6 @@ public interface LpRewardRepository extends JpaRepository<LpReward, Long> {
     );
 
     List<LpReward> findAllByUserOrderByRecommendedAtDesc(User user);
+
+    Optional<AnalysisResult> findTopByAnalysis_DiaryOrderByIdDesc(Diary diary);
 }

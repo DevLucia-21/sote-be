@@ -65,26 +65,25 @@ public class LpRewardService {
      * → FE가 원래 LP 카드 꾸밀 때 쓰던 데이터 그대로 제공
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> getTodayRewardWithRichInfo(User user) {
-        LocalDate today = LocalDate.now();
+    public Map<String, Object> getTodayRewardDetail(User user) {
 
+        LocalDate today = LocalDate.now();
         var rewardOpt = lpRewardRepo.findByUserAndRewardDate(user, today);
         if (rewardOpt.isEmpty()) return null;
 
         var reward = rewardOpt.get();
         var dto = LpRewardResponse.fromEntity(reward);
 
-        // Diary → Analysis → AnalysisResult
-        var diary = reward.getDiary();
-        var analysis = diary != null ? diary.getAnalysis() : null;
-        var result = analysis != null ? analysis.getResult() : null;
-
         Map<String, Object> resp = new LinkedHashMap<>();
-
-        // 기본 LP 정보
         resp.put("lp", dto);
 
-        // Rich 정보 추가
+        // Diary → AnalysisResult 찾기 (Diary에는 analysis 없으므로 repo로 조회)
+        var diary = reward.getDiary();
+
+        // AnalysisResult는 AnalysisResultRepository에서 조회해야함
+        var result = resultRepo.findTopByAnalysis_DiaryOrderByIdDesc(diary)
+                .orElse(null);
+
         if (result != null) {
             resp.put("emotionLabel", result.getEmotionLabel());
             resp.put("emotionReason", result.getEmotionReason());
@@ -92,7 +91,6 @@ public class LpRewardService {
                     result.getEmotionScore() != null ? result.getEmotionScore().doubleValue() : null);
             resp.put("genre", result.getSelectedTrackGenre());
             resp.put("selectedTrackReason", result.getSelectedTrackReason());
-            resp.put("trackCover", result.getSelectedTrackCoverImageUrl());
         }
 
         return resp;
