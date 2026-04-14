@@ -10,11 +10,14 @@ import com.fluxion.sote.analysis.repository.AnalysisRepository;
 import com.fluxion.sote.analysis.repository.AnalysisResultRepository;
 import com.fluxion.sote.auth.entity.Genre;
 import com.fluxion.sote.auth.entity.User;
+import com.fluxion.sote.challenge.repository.UserChallengeRepository;
+import com.fluxion.sote.challenge.service.ChallengeRecommendService;
 import com.fluxion.sote.diary.entity.Diary;
 import com.fluxion.sote.diary.repository.DiaryRepository;
 import com.fluxion.sote.global.enums.EmotionType;
 import com.fluxion.sote.global.util.BirthYearUtil;
 import com.fluxion.sote.global.util.SecurityUtil;
+import com.fluxion.sote.lpmusic.service.SpotifyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
@@ -40,6 +43,11 @@ public class AnalysisService {
     private final AnalysisRepository analysisRepo;
     private final AnalysisResultRepository resultRepo;
     private final DiaryRepository diaryRepo;
+    private final SpotifyService spotifyService;
+
+    private final ChallengeRecommendService challengeRecommendService;
+    private final UserChallengeRepository userChallengeRepo;
+
     private final ObjectMapper om = new ObjectMapper();
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
@@ -52,7 +60,6 @@ public class AnalysisService {
      */
     public AnalysisResponse run(AnalysisRequest req) {
         User user = SecurityUtil.getCurrentUser();
-        LocalDate today = LocalDate.now(KST);
 
         if (req.getDiaryId() == null) {
             return AnalysisResponse.error("DiaryId가 필요합니다.");
@@ -69,9 +76,12 @@ public class AnalysisService {
         // AI 호출
         Map<String, Object> body = callAiForAnalysis(user, a, req);
 
-        // 결과 매핑 및 저장 (중복이어도 계속 저장됨)
+        // 결과 매핑 및 저장
         AnalysisResult r = mapResultFromBody(a, body);
         resultRepo.save(r);
+
+        // 오늘 일기면 챌린지 추천 생성
+        maybeRecommendTodayChallenge(user, diary);
 
         return new AnalysisResponse("ok", "success", body);
     }
@@ -95,6 +105,9 @@ public class AnalysisService {
             AnalysisResult r = mapResultFromBody(a, body);
             resultRepo.save(r);
 
+            // 오늘 일기면 챌린지 추천 생성
+            maybeRecommendTodayChallenge(user, diary);
+
             // 감정 반영 (기존과 동일)
             Object emoObj = body.get("emotion");
             if (emoObj instanceof Map<?, ?> emo) {
@@ -115,11 +128,36 @@ public class AnalysisService {
     }
 
     /**
+     * 오늘 일기일 때만 챌린지 추천 생성
+     * 이미 오늘 추천 기록이 있으면 중복 생성하지 않음
+     */
+    private void maybeRecommendTodayChallenge(User user, Diary diary) {
+        LocalDate today = LocalDate.now(KST);
+
+        if (!today.equals(diary.getDate())) {
+            return;
+        }
+
+        if (userChallengeRepo.findByUserAndDate(user, today).isPresent()) {
+            return;
+        }
+
+        try {
+            challengeRecommendService.recommendTodayChallenge(user, null);
+            System.out.println("[오늘 챌린지 추천 완료] userId=" + user.getId() + ", date=" + today);
+        } catch (Exception e) {
+            System.err.println("오늘 챌린지 추천 실패: " +
+                    e.getClass().getSimpleName() + " - " +
+                    (e.getMessage() != null ? e.getMessage() : "no message"));
+        }
+    }
+
+    /**
      * 기존 Analysis가 있어도 그대로 사용하고
      * 없으면 새로 생성
      */
     private Analysis getOrCreateAnalysis(User user, Diary diary, LocalDate date) {
-        return analysisRepo.findByUserAndAnalysisDate(user, date)
+        return analysisRepo.findByUserIdAndDiaryId(user.getId(), diary.getId())
                 .orElseGet(() -> {
                     Analysis na = new Analysis();
                     na.setUser(user);
@@ -164,6 +202,7 @@ public class AnalysisService {
      * FastAPI가 내려준 음악 후보 중 랜덤 선택
      * 최근 5곡 제외 로직은 그대로 유지
      */
+    @SuppressWarnings("unchecked")
     private void attachSelectedTrack(Map<String, Object> body, User user) {
         Object musicObj = body.get("music");
         if (!(musicObj instanceof List<?> list) || list.isEmpty()) return;
@@ -192,6 +231,19 @@ public class AnalysisService {
         body.put("selectedTrack", selectedTrack);
         body.put("selectedTrackIndex", pick);
         body.putIfAbsent("top_track", selectedTrack);
+    }
+
+    private String firstNonNullString(Map<?, ?> source, String... keys) {
+        for (String key : keys) {
+            Object value = source.get(key);
+            if (value == null) continue;
+
+            String text = value.toString().trim();
+            if (!text.isEmpty() && !"null".equalsIgnoreCase(text)) {
+                return text;
+            }
+        }
+        return null;
     }
 
     /**
@@ -241,12 +293,53 @@ public class AnalysisService {
         // --- 선택곡 ---
         Object selectedTrack = body.get("selectedTrack");
         if (selectedTrack instanceof Map<?, ?> track) {
-            r.setSelectedTrackTitle(Objects.toString(track.get("title"), null));
-            r.setSelectedTrackArtist(Objects.toString(track.get("artist"), null));
-            r.setSelectedTrackAlbum(Objects.toString(track.get("album"), null));
-            r.setSelectedTrackGenre(Objects.toString(track.get("genre"), null));
-            r.setSelectedTrackReason(Objects.toString(track.get("reason"), null));
-            r.setSelectedTrackCoverImageUrl(Objects.toString(track.get("coverImageUrl"), null));
+            String title = firstNonNullString(track, "title");
+            String artist = firstNonNullString(track, "artist");
+            String album = firstNonNullString(track, "album");
+            String genre = firstNonNullString(track, "genre");
+            String reason = firstNonNullString(track, "reason");
+
+            r.setSelectedTrackTitle(title);
+            r.setSelectedTrackArtist(artist);
+            r.setSelectedTrackAlbum(album);
+            r.setSelectedTrackGenre(genre);
+            r.setSelectedTrackReason(reason);
+
+            String coverImageUrl = firstNonNullString(
+                    track,
+                    "coverImageUrl",
+                    "cover_image_url",
+                    "imageUrl",
+                    "image_url",
+                    "albumImageUrl",
+                    "album_image_url"
+            );
+
+            if (coverImageUrl == null && title != null && artist != null) {
+                try {
+                    Map<String, String> spotifyMeta = spotifyService.searchTrack(title, artist);
+                    coverImageUrl = spotifyMeta.getOrDefault("albumImageUrl", null);
+
+                    if (r.getSelectedTrackAlbum() == null) {
+                        r.setSelectedTrackAlbum(spotifyMeta.getOrDefault("album", album));
+                    }
+
+                    if (r.getSelectedTrackTitle() == null) {
+                        r.setSelectedTrackTitle(spotifyMeta.getOrDefault("title", title));
+                    }
+
+                    if (r.getSelectedTrackArtist() == null) {
+                        r.setSelectedTrackArtist(spotifyMeta.getOrDefault("artist", artist));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Spotify 메타데이터 조회 실패: " + e.getMessage());
+                }
+            }
+
+            r.setSelectedTrackCoverImageUrl(coverImageUrl);
+
+            System.out.println("[AnalysisService] selectedTrack = " + track);
+            System.out.println("[AnalysisService] resolved coverImageUrl = " + coverImageUrl);
         }
 
         Object idxObj = body.get("selectedTrackIndex");

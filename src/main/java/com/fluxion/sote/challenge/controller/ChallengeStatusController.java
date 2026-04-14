@@ -1,7 +1,6 @@
 package com.fluxion.sote.challenge.controller;
 
 import com.fluxion.sote.auth.entity.User;
-import com.fluxion.sote.challenge.dto.EmotionDistributionResponse;
 import com.fluxion.sote.challenge.dto.TodayChallengeStatus;
 import com.fluxion.sote.challenge.service.ChallengeStatusService;
 import lombok.RequiredArgsConstructor;
@@ -26,5 +25,4 @@ public class ChallengeStatusController {
         TodayChallengeStatus dto = statusService.getTodayStatus(user);
         return ResponseEntity.ok(dto);
     }
-
 }

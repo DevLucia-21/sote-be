@@ -6,8 +6,10 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -37,16 +39,22 @@ public class SpotifyService {
                 Map.class
         );
 
-        return (String) response.getBody().get("access_token");
+        Map<String, Object> body = response.getBody();
+        if (body == null || body.get("access_token") == null) {
+            throw new IllegalStateException("Spotify access token 발급에 실패했습니다.");
+        }
+
+        return (String) body.get("access_token");
     }
 
     /**
      * 곡 검색 (제목 + 아티스트 기반)
      */
+    @SuppressWarnings("unchecked")
     public Map<String, String> searchTrack(String title, String artist) {
         String token = getAccessToken();
 
-        String query = title + " " + artist;
+        String query = URLEncoder.encode(title + " " + artist, StandardCharsets.UTF_8);
         String url = "https://api.spotify.com/v1/search?q=" + query + "&type=track&limit=1";
 
         HttpHeaders headers = new HttpHeaders();
@@ -58,28 +66,63 @@ public class SpotifyService {
         Map<String, Object> body = response.getBody();
 
         if (body == null || body.isEmpty()) {
-            return Map.of("title", title, "artist", artist);
+            return Map.of(
+                    "title", title,
+                    "artist", artist
+            );
         }
 
         Map<String, Object> tracks = (Map<String, Object>) body.get("tracks");
-        var items = (java.util.List<Map<String, Object>>) tracks.get("items");
+        if (tracks == null) {
+            return Map.of(
+                    "title", title,
+                    "artist", artist
+            );
+        }
 
-        if (items.isEmpty()) {
-            return Map.of("title", title, "artist", artist);
+        List<Map<String, Object>> items = (List<Map<String, Object>>) tracks.get("items");
+        if (items == null || items.isEmpty()) {
+            return Map.of(
+                    "title", title,
+                    "artist", artist
+            );
         }
 
         Map<String, Object> track = items.get(0);
 
-        String trackTitle = (String) track.get("name");
-        String trackArtist = (String) ((Map<String, Object>) ((java.util.List<?>) track.get("artists")).get(0)).get("name");
-        String albumImageUrl = (String) ((Map<String, Object>) ((java.util.List<?>) ((Map<String, Object>) track.get("album")).get("images")).get(0)).get("url");
-        String playUrl = (String) ((Map<String, Object>) track.get("external_urls")).get("spotify");
+        String trackTitle = (String) track.getOrDefault("name", title);
+
+        List<Map<String, Object>> artists = (List<Map<String, Object>>) track.get("artists");
+        String trackArtist = artist;
+        if (artists != null && !artists.isEmpty()) {
+            trackArtist = (String) artists.get(0).getOrDefault("name", artist);
+        }
+
+        Map<String, Object> album = (Map<String, Object>) track.get("album");
+        String albumName = null;
+        String albumImageUrl = null;
+
+        if (album != null) {
+            albumName = (String) album.get("name");
+
+            List<Map<String, Object>> images = (List<Map<String, Object>>) album.get("images");
+            if (images != null && !images.isEmpty()) {
+                albumImageUrl = (String) images.get(0).get("url");
+            }
+        }
+
+        Map<String, Object> externalUrls = (Map<String, Object>) track.get("external_urls");
+        String playUrl = null;
+        if (externalUrls != null) {
+            playUrl = (String) externalUrls.get("spotify");
+        }
 
         return Map.of(
-                "title", trackTitle,
-                "artist", trackArtist,
-                "albumImageUrl", albumImageUrl,
-                "playUrl", playUrl
+                "title", trackTitle != null ? trackTitle : title,
+                "artist", trackArtist != null ? trackArtist : artist,
+                "album", albumName != null ? albumName : "",
+                "albumImageUrl", albumImageUrl != null ? albumImageUrl : "",
+                "playUrl", playUrl != null ? playUrl : ""
         );
     }
 }
