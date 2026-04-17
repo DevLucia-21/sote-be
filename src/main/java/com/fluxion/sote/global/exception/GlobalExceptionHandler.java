@@ -64,4 +64,18 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.badRequest().body(err);
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(
+            IllegalStateException ex,
+            HttpServletRequest req) {
+        ErrorResponse err = new ErrorResponse(
+                ZonedDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                ex.getMessage(),
+                req.getRequestURI()
+        );
+        return ResponseEntity.badRequest().body(err);
+    }
 }

@@ -59,6 +59,7 @@ public class AnalysisService {
      * - 기존 결과와 무관하게 항상 새로 분석해서 저장
      */
     public AnalysisResponse run(AnalysisRequest req) {
+
         User user = SecurityUtil.getCurrentUser();
 
         if (req.getDiaryId() == null) {
@@ -78,7 +79,9 @@ public class AnalysisService {
 
         // 결과 매핑 및 저장
         AnalysisResult r = mapResultFromBody(a, body);
+        a.setResult(r);
         resultRepo.save(r);
+        analysisRepo.save(a);
 
         // 오늘 일기면 챌린지 추천 생성
         maybeRecommendTodayChallenge(user, diary);
@@ -103,7 +106,9 @@ public class AnalysisService {
 
             Map<String, Object> body = callAiForAnalysis(user, a, req);
             AnalysisResult r = mapResultFromBody(a, body);
+            a.setResult(r);
             resultRepo.save(r);
+            analysisRepo.save(a);
 
             // 오늘 일기면 챌린지 추천 생성
             maybeRecommendTodayChallenge(user, diary);

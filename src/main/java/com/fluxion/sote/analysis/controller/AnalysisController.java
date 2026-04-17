@@ -33,6 +33,11 @@ public class AnalysisController {
      */
     @PostMapping
     public ResponseEntity<AnalysisResponse> run(@Valid @RequestBody AnalysisRequest req) {
+
+        System.out.println("=== POST /api/analysis start ===");
+        System.out.println("req.diaryId = " + req.getDiaryId());
+        System.out.println("req.text = " + req.getText());
+
         AnalysisResponse res = service.run(req);
 
         HttpStatus status = HttpStatus.OK;
@@ -63,16 +68,15 @@ public class AnalysisController {
         Long userId = SecurityUtil.getCurrentUserId();
 
         Analysis analysis = analysisRepo.findByUserIdAndDiaryId(userId, diaryId).orElse(null);
-        if (analysis == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "분석 기록이 없습니다."));
+
+        if (analysis == null || analysis.getResult() == null) {
+            Map<String, Object> pending = new HashMap<>();
+            pending.put("status", "pending");
+            pending.put("message", "아직 분석 결과가 없습니다.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(pending);
         }
 
         AnalysisResult result = analysis.getResult();
-        if (result == null) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT)
-                    .body(Map.of("message", "아직 분석 결과가 없습니다."));
-        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("analysisDate", analysis.getAnalysisDate());
@@ -87,6 +91,5 @@ public class AnalysisController {
         body.put("selectedTrackCoverImageUrl", result.getSelectedTrackCoverImageUrl());
 
         return ResponseEntity.ok(body);
-
     }
 }

@@ -7,18 +7,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
 public class ChallengeStatusService {
 
     private final UserChallengeRepository userChallengeRepo;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /**
      * 오늘 챌린지 추천 여부 및 완료 여부 조회
      */
     public TodayChallengeStatus getTodayStatus(User user) {
-        return userChallengeRepo.findByUserAndDate(user, LocalDate.now())
+        return userChallengeRepo.findByUserAndDate(user, LocalDate.now(KST))
                 .map(ch -> TodayChallengeStatus.builder()
                         .recommended(true)
                         .completed(ch.isCompleted())
