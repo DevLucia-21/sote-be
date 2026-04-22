@@ -10,7 +10,6 @@ import com.fluxion.sote.analysis.repository.AnalysisRepository;
 import com.fluxion.sote.analysis.repository.AnalysisResultRepository;
 import com.fluxion.sote.auth.entity.Genre;
 import com.fluxion.sote.auth.entity.User;
-import com.fluxion.sote.challenge.repository.UserChallengeRepository;
 import com.fluxion.sote.challenge.service.ChallengeRecommendService;
 import com.fluxion.sote.diary.entity.Diary;
 import com.fluxion.sote.diary.repository.DiaryRepository;
@@ -44,22 +43,16 @@ public class AnalysisService {
     private final AnalysisResultRepository resultRepo;
     private final DiaryRepository diaryRepo;
     private final SpotifyService spotifyService;
-
     private final ChallengeRecommendService challengeRecommendService;
-    private final UserChallengeRepository userChallengeRepo;
 
     private final ObjectMapper om = new ObjectMapper();
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /**
-     * 전시회 버전: 분석 제한 완전 제거
-     * - 같은 일기 여러 번 분석 가능
-     * - 같은 날짜 여러 번 분석 가능
-     * - 기존 결과와 무관하게 항상 새로 분석해서 저장
+     * 수동 분석 실행
      */
     public AnalysisResponse run(AnalysisRequest req) {
-
         User user = SecurityUtil.getCurrentUser();
 
         if (req.getDiaryId() == null) {
@@ -71,26 +64,22 @@ public class AnalysisService {
 
         LocalDate targetDate = diary.getDate();
 
-        // 기존 결과 여부와 관계없이 항상 새로운 AnalysisResult 생성
         Analysis a = getOrCreateAnalysis(user, diary, targetDate);
 
-        // AI 호출
         Map<String, Object> body = callAiForAnalysis(user, a, req);
 
-        // 결과 매핑 및 저장
         AnalysisResult r = mapResultFromBody(a, body);
         a.setResult(r);
         resultRepo.save(r);
         analysisRepo.save(a);
 
-        // 오늘 일기면 챌린지 추천 생성
         maybeRecommendTodayChallenge(user, diary);
 
         return new AnalysisResponse("ok", "success", body);
     }
 
     /**
-     * 자동 분석도 제한 없이 항상 실행됨 (DiarySavedEvent)
+     * 자동 분석 실행 (DiarySavedEvent)
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void runInNewTx(Diary diary) {
@@ -110,10 +99,8 @@ public class AnalysisService {
             resultRepo.save(r);
             analysisRepo.save(a);
 
-            // 오늘 일기면 챌린지 추천 생성
             maybeRecommendTodayChallenge(user, diary);
 
-            // 감정 반영 (기존과 동일)
             Object emoObj = body.get("emotion");
             if (emoObj instanceof Map<?, ?> emo) {
                 String label = Objects.toString(emo.get("label"), null);
@@ -134,16 +121,12 @@ public class AnalysisService {
 
     /**
      * 오늘 일기일 때만 챌린지 추천 생성
-     * 이미 오늘 추천 기록이 있으면 중복 생성하지 않음
+     * 챌린지 생성 실패가 분석 저장을 막으면 안 됨
      */
     private void maybeRecommendTodayChallenge(User user, Diary diary) {
         LocalDate today = LocalDate.now(KST);
 
         if (!today.equals(diary.getDate())) {
-            return;
-        }
-
-        if (userChallengeRepo.findByUserAndDate(user, today).isPresent()) {
             return;
         }
 
@@ -158,8 +141,7 @@ public class AnalysisService {
     }
 
     /**
-     * 기존 Analysis가 있어도 그대로 사용하고
-     * 없으면 새로 생성
+     * 기존 Analysis가 있어도 그대로 사용하고 없으면 새로 생성
      */
     private Analysis getOrCreateAnalysis(User user, Diary diary, LocalDate date) {
         return analysisRepo.findByUserIdAndDiaryId(user.getId(), diary.getId())
@@ -205,7 +187,6 @@ public class AnalysisService {
 
     /**
      * FastAPI가 내려준 음악 후보 중 랜덤 선택
-     * 최근 5곡 제외 로직은 그대로 유지
      */
     @SuppressWarnings("unchecked")
     private void attachSelectedTrack(Map<String, Object> body, User user) {
@@ -260,7 +241,6 @@ public class AnalysisService {
 
         Diary diary = analysis.getDiary();
 
-        // --- 감정 결과 파싱 ---
         Object emoObj = body.get("emotion");
         if (emoObj instanceof Map<?, ?> emo) {
             String label = Objects.toString(emo.get("label"), null);
@@ -279,7 +259,6 @@ public class AnalysisService {
             diaryRepo.save(diary);
         }
 
-        // --- 음악 정보 ---
         Object musicObj = body.get("music");
         if (musicObj != null) {
             try {
@@ -287,7 +266,6 @@ public class AnalysisService {
             } catch (Exception ignore) {}
         }
 
-        // --- AI 원본 응답 저장 ---
         try {
             Map<String, Object> toPersist = new HashMap<>(body);
             toPersist.remove("selectedTrack");
@@ -295,7 +273,6 @@ public class AnalysisService {
             r.setAiResponse(om.writeValueAsString(toPersist));
         } catch (Exception ignore) {}
 
-        // --- 선택곡 ---
         Object selectedTrack = body.get("selectedTrack");
         if (selectedTrack instanceof Map<?, ?> track) {
             String title = firstNonNullString(track, "title");

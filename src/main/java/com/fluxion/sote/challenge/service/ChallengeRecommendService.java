@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Random;
 
@@ -25,20 +26,28 @@ public class ChallengeRecommendService {
     private final UserChallengeRepository userChallengeRepo;
     private final AnalysisResultRepository analysisResultRepo;
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
     /**
-     * 전시회 버전 (제한 없음)
-     * - 하루 여러 번 추천 가능
-     * - 최근 3일 제외 로직 없음
+     * 오늘 챌린지 추천
+     * - 오늘 이미 생성된 챌린지가 있으면 기존 챌린지 반환
+     * - 없으면 최신 분석 결과 기반으로 새 챌린지 생성
      */
     public ChallengeDefinition recommendTodayChallenge(User user, EmotionType emotionType) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KST);
 
-        // 1. 최신 분석 결과 가져오기
+        // 1. 오늘 이미 생성된 챌린지가 있으면 그대로 반환
+        UserChallenge existing = userChallengeRepo.findByUserAndDate(user, today).orElse(null);
+        if (existing != null) {
+            return existing.getChallenge();
+        }
+
+        // 2. 최신 분석 결과 가져오기
         AnalysisResult latestResult = analysisResultRepo
                 .findTopByAnalysis_User_IdOrderByCreatedAtDesc(user.getId())
                 .orElseThrow(() -> new IllegalStateException("최근 분석 결과가 없습니다."));
 
-        // 2. emotionType이 null이면 분석 결과 기반
+        // 3. 감정 타입 결정
         if (emotionType == null) {
             emotionType = EmotionType.fromLabel(latestResult.getEmotionLabel());
             if (emotionType == null) {
@@ -46,7 +55,7 @@ public class ChallengeRecommendService {
             }
         }
 
-        // 3. 추천 후보 전체 가져오기 (제한 없음)
+        // 4. 후보 조회
         List<ChallengeDefinition> candidates =
                 definitionRepo.findAllByEmotionTypeAndIsDeletedFalse(emotionType);
 
@@ -54,10 +63,16 @@ public class ChallengeRecommendService {
             throw new IllegalStateException("추천 가능한 챌린지가 없습니다.");
         }
 
-        // 4. 랜덤으로 선택
+        // 5. 랜덤 선택
         ChallengeDefinition selected = candidates.get(new Random().nextInt(candidates.size()));
 
-        // 5. 추천 기록 저장 (중복 여러 번 가능)
+        // 6. 저장 직전 한 번 더 확인
+        existing = userChallengeRepo.findByUserAndDate(user, today).orElse(null);
+        if (existing != null) {
+            return existing.getChallenge();
+        }
+
+        // 7. 오늘 챌린지 저장
         UserChallenge record = UserChallenge.builder()
                 .user(user)
                 .challenge(selected)
@@ -66,7 +81,7 @@ public class ChallengeRecommendService {
                 .completed(false)
                 .build();
 
-        userChallengeRepo.save(record);
+        userChallengeRepo.saveAndFlush(record);
         return selected;
     }
 }
