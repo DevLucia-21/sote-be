@@ -1,6 +1,5 @@
 package com.fluxion.sote.statistics.service;
 
-import com.fluxion.sote.statistics.dto.ChallengeBadgeResponse;
 import com.fluxion.sote.global.enums.EmotionType;
 import com.fluxion.sote.global.util.SecurityUtil;
 import com.fluxion.sote.statistics.dto.*;
@@ -27,20 +26,21 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final KeywordStatisticsRepository keywordStatisticsRepository;
 
     @Override
-    public Object getDiaryStats(String period, Integer year, Integer month) {  //수정
+    public Object getDiaryStats(String period, Integer year, Integer month) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if ("overall".equalsIgnoreCase(period)) {
             long totalCount = diaryStatisticsRepository.countTotalByUserId(userId);
             return new DiaryTotalResponse((int) totalCount);
         } else if ("monthly".equalsIgnoreCase(period)) {
-            LocalDate now = LocalDate.now();  // 기존 로직 유지
-            int targetYear = (year != null) ? year : now.getYear();        //수정
-            int targetMonth = (month != null) ? month : now.getMonthValue(); //수정
+            LocalDate now = LocalDate.now();
+            int targetYear = (year != null) ? year : now.getYear();
+            int targetMonth = (month != null) ? month : now.getMonthValue();
+
             long monthlyCount = diaryStatisticsRepository.countMonthlyByUserId(
                     userId,
-                    targetYear,   //수정
-                    targetMonth   //수정
+                    targetYear,
+                    targetMonth
             );
             return new DiaryMonthlyResponse((int) monthlyCount);
         }
@@ -50,15 +50,15 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public AnalysisStatsResponse getAnalysisStats(String period) {
-        Long userId = SecurityUtil.getCurrentUserId(); // 현재 로그인 유저 ID 가져오기
+        Long userId = SecurityUtil.getCurrentUserId();
 
         if ("overall".equalsIgnoreCase(period)) {
             List<Object[]> results = analysisStatisticsRepository.countEmotionDistributionByUserId(userId);
 
             Map<String, Long> distribution = results.stream()
                     .collect(Collectors.toMap(
-                            r -> (String) r[0],    // emotionLabel
-                            r -> (Long) r[1]       // count
+                            r -> (String) r[0],
+                            r -> (Long) r[1]
                     ));
 
             return new AnalysisStatsResponse(distribution);
@@ -68,17 +68,17 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public ChallengeCompletionResponse getChallengeCompletion(String period, Integer offset) {  //수정
+    public ChallengeCompletionResponse getChallengeCompletion(String period, Integer offset) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (!"weekly".equalsIgnoreCase(period)) {
             throw new IllegalArgumentException("Only weekly period supported for challenge completion");
         }
 
-        int weekOffset = (offset != null) ? offset : 0;  //수정
+        int weekOffset = (offset != null) ? offset : 0;
 
-        LocalDate end = LocalDate.now().plusWeeks(weekOffset);  //수정
-        LocalDate start = end.minusDays(6); // 최근 7일  //수정
+        LocalDate end = LocalDate.now().plusWeeks(weekOffset);
+        LocalDate start = end.minusDays(6);
 
         long total = challengeStatisticsRepository.countWeeklyChallenges(userId, start, end);
         long completed = challengeStatisticsRepository.countWeeklyCompleted(userId, start, end);
@@ -96,23 +96,25 @@ public class StatisticsServiceImpl implements StatisticsService {
             throw new IllegalArgumentException("Only monthly period supported for emotion performance");
         }
 
-        // 월 지정 (없으면 현재 월)
         LocalDate now = LocalDate.now();
         YearMonth targetMonth = (month != null)
-                ? YearMonth.parse(month) // 예: 2025-10
+                ? YearMonth.parse(month)
                 : YearMonth.from(now);
 
         LocalDate start = targetMonth.atDay(1);
         LocalDate end = targetMonth.atEndOfMonth();
 
-        // 쿼리 호출
         List<Object[]> results = challengeStatisticsRepository.countMonthlyEmotionPerformance(userId, start, end);
 
         Map<EmotionType, Long> emotionCounts = new EnumMap<>(EmotionType.class);
         Map<EmotionType, Long> totalCounts = new EnumMap<>(EmotionType.class);
 
         for (Object[] row : results) {
-            EmotionType type = (EmotionType) row[0];
+            EmotionType type = toEmotionType(row[0]);
+            if (type == null) {
+                continue;
+            }
+
             Long completed = row[1] != null ? ((Number) row[1]).longValue() : 0L;
             Long total = row.length > 2 && row[2] != null ? ((Number) row[2]).longValue() : 0L;
 
@@ -136,21 +138,20 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public MusicStatsResponse getMusicStats(String period, Integer year, Integer month) {  //수정
+    public MusicStatsResponse getMusicStats(String period, Integer year, Integer month) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (!"monthly".equalsIgnoreCase(period)) {
             throw new IllegalArgumentException("Only monthly period supported for music stats");
         }
 
-        LocalDate now = LocalDate.now();  //수정
-        int targetYear = (year != null) ? year : now.getYear();        //수정
-        int targetMonth = (month != null) ? month : now.getMonthValue(); //수정
-        LocalDate targetDate = LocalDate.of(targetYear, targetMonth, 1); //수정
+        LocalDate now = LocalDate.now();
+        int targetYear = (year != null) ? year : now.getYear();
+        int targetMonth = (month != null) ? month : now.getMonthValue();
+        LocalDate targetDate = LocalDate.of(targetYear, targetMonth, 1);
 
-        // 선택된 월 범위
-        OffsetDateTime start = targetDate.withDayOfMonth(1).atStartOfDay().atOffset(ZoneOffset.UTC);  //수정
-        OffsetDateTime end = targetDate.withDayOfMonth(targetDate.lengthOfMonth()).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);  //수정
+        OffsetDateTime start = targetDate.withDayOfMonth(1).atStartOfDay().atOffset(ZoneOffset.UTC);
+        OffsetDateTime end = targetDate.withDayOfMonth(targetDate.lengthOfMonth()).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
 
         long monthlyCount = musicStatisticsRepository.countMonthlyRecommendedTracks(userId, start, end);
 
@@ -160,7 +161,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         for (Object[] row : results) {
             String emotion = (String) row[0];
             String genre = (String) row[1];
-            Long count = (Long) row[2];
+            Long count = row[2] != null ? ((Number) row[2]).longValue() : 0L;
 
             mapping.putIfAbsent(emotion, new HashMap<>());
             mapping.get(emotion).put(genre, count);
@@ -170,21 +171,21 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public KeywordRankingResponse getKeywordRanking(String period, Integer year, Integer month) {  //수정
+    public KeywordRankingResponse getKeywordRanking(String period, Integer year, Integer month) {
         Long userId = SecurityUtil.getCurrentUserId();
 
-        LocalDate now = LocalDate.now();  //수정
-        int targetYear = (year != null) ? year : now.getYear();        //수정
-        int targetMonth = (month != null) ? month : now.getMonthValue(); //수정
+        LocalDate now = LocalDate.now();
+        int targetYear = (year != null) ? year : now.getYear();
+        int targetMonth = (month != null) ? month : now.getMonthValue();
 
-        LocalDate start = LocalDate.of(targetYear, targetMonth, 1);  //수정
-        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());  //수정
+        LocalDate start = LocalDate.of(targetYear, targetMonth, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
 
         List<Object[]> topKeywordsRaw = keywordStatisticsRepository.findTopKeywordsMonthly(userId, start, end);
 
         List<KeywordRankingResponse.KeywordRanking> rankings = topKeywordsRaw.stream()
                 .limit(10)
-                .map(row -> new KeywordRankingResponse.KeywordRanking((String) row[0], (Long) row[1]))
+                .map(row -> new KeywordRankingResponse.KeywordRanking((String) row[0], ((Number) row[1]).longValue()))
                 .toList();
 
         return new KeywordRankingResponse(rankings);
@@ -194,12 +195,21 @@ public class StatisticsServiceImpl implements StatisticsService {
     public KeywordEmotionRankingResponse getKeywordEmotionRanking(String period) {
         Long userId = SecurityUtil.getCurrentUserId();
 
+        if (!"overall".equalsIgnoreCase(period)) {
+            throw new IllegalArgumentException("Only overall period supported for keyword emotion ranking");
+        }
+
         List<Object[]> emotionToKeywordRaw = keywordStatisticsRepository.findEmotionToKeyword(userId);
 
-        Map<EmotionType, List<String>> emotionToKeywords = new HashMap<>();
+        Map<EmotionType, List<String>> emotionToKeywords = new EnumMap<>(EmotionType.class);
         for (Object[] row : emotionToKeywordRaw) {
-            EmotionType emotion = (EmotionType) row[0];
-            String keyword = (String) row[1];
+            EmotionType emotion = toEmotionType(row[0]);
+            String keyword = row[1] != null ? (String) row[1] : null;
+
+            if (emotion == null || keyword == null || keyword.isBlank()) {
+                continue;
+            }
+
             emotionToKeywords.computeIfAbsent(emotion, k -> new ArrayList<>()).add(keyword);
         }
 
@@ -210,22 +220,42 @@ public class StatisticsServiceImpl implements StatisticsService {
     public KeywordExploreResponse getKeywordExplore(String period) {
         Long userId = SecurityUtil.getCurrentUserId();
 
+        if (!"overall".equalsIgnoreCase(period)) {
+            throw new IllegalArgumentException("Only overall period supported for keyword explore");
+        }
+
         List<Object[]> keywordToEmotionRaw = keywordStatisticsRepository.findKeywordToEmotion(userId);
 
         Map<String, Map<EmotionType, Long>> keywordToEmotions = new HashMap<>();
         for (Object[] row : keywordToEmotionRaw) {
-            String keyword = (String) row[0];
-            EmotionType emotion = (EmotionType) row[1];
-            Long count = (Long) row[2];
+            String keyword = row[0] != null ? (String) row[0] : null;
+            EmotionType emotion = toEmotionType(row[1]);
+            Long count = row[2] != null ? ((Number) row[2]).longValue() : 0L;
 
-            // 혹시 모를 null 방어
-            String safeKeyword = (keyword == null) ? "(unknown)" : keyword;
+            if (keyword == null || keyword.isBlank() || emotion == null) {
+                continue;
+            }
 
-            keywordToEmotions.putIfAbsent(safeKeyword, new HashMap<>());
-            keywordToEmotions.get(safeKeyword).put(emotion, count);
+            keywordToEmotions.putIfAbsent(keyword, new EnumMap<>(EmotionType.class));
+            keywordToEmotions.get(keyword).put(emotion, count);
         }
 
         return new KeywordExploreResponse(keywordToEmotions);
     }
 
+    private EmotionType toEmotionType(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof EmotionType emotionType) {
+            return emotionType;
+        }
+
+        if (value instanceof String str) {
+            return EmotionType.valueOf(str);
+        }
+
+        throw new IllegalArgumentException("Unsupported emotion type value: " + value);
+    }
 }
