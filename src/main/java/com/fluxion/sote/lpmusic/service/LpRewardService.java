@@ -6,16 +6,22 @@ import com.fluxion.sote.lpmusic.dto.LpRewardResponse;
 import com.fluxion.sote.lpmusic.entity.LpReward;
 import com.fluxion.sote.lpmusic.repository.LpRewardRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.temporal.WeekFields;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LpRewardService {
 
     private final LpRewardRepository lpRewardRepo;
@@ -25,34 +31,51 @@ public class LpRewardService {
      * 전시회 버전:
      * - LP 보상 하루 1회 제한 제거
      * - 챌린지 완료할 때마다 무제한 LP 생성
+     * - Spotify 조회 실패해도 기본값으로 저장
      */
     @Transactional
     public LpRewardResponse grantReward(User user, Diary diary, String title, String artist, String album) {
         LocalDate today = LocalDate.now();
 
-        // ❌ 하루 1개 제한 제거!
-        // 기존:
-        // if (lpRewardRepo.existsByUserAndRewardDate(user, today)) {
-        //     throw new IllegalStateException("오늘은 이미 LP 보상을 받았습니다.");
-        // }
+        Map<String, String> trackInfo = Collections.emptyMap();
 
-        // Spotify에서 상세 정보 조회 (기존 유지)
-        var trackInfo = spotifyService.searchTrack(title, artist);
+        try {
+            trackInfo = spotifyService.searchTrack(title, artist);
+        } catch (Exception e) {
+            log.warn("Spotify track search failed. fallback to raw values. title={}, artist={}, error={}",
+                    title, artist, e.getMessage());
+        }
 
         LpReward reward = LpReward.builder()
                 .user(user)
                 .diary(diary)
-                .title(trackInfo.getOrDefault("title", title))
-                .artist(trackInfo.getOrDefault("artist", artist))
-                .album(trackInfo.getOrDefault("album", album))
-                .albumImageUrl(trackInfo.getOrDefault("albumImageUrl", null))
-                .playUrl(trackInfo.getOrDefault("playUrl", null))
+                .title(getSafeValue(trackInfo, "title", title))
+                .artist(getSafeValue(trackInfo, "artist", artist))
+                .album(getSafeValue(trackInfo, "album", album))
+                .albumImageUrl(getNullableValue(trackInfo, "albumImageUrl"))
+                .playUrl(getNullableValue(trackInfo, "playUrl"))
                 .recommendedAt(LocalDateTime.now())
-                .rewardDate(today)  // 같은 날짜여도 여러 개 저장 가능
+                .rewardDate(today)
                 .build();
 
         lpRewardRepo.save(reward);
         return LpRewardResponse.fromEntity(reward);
+    }
+
+    private String getSafeValue(Map<String, String> trackInfo, String key, String fallback) {
+        if (trackInfo == null) {
+            return fallback;
+        }
+        String value = trackInfo.get(key);
+        return (value == null || value.isBlank()) ? fallback : value;
+    }
+
+    private String getNullableValue(Map<String, String> trackInfo, String key) {
+        if (trackInfo == null) {
+            return null;
+        }
+        String value = trackInfo.get(key);
+        return (value == null || value.isBlank()) ? null : value;
     }
 
     @Transactional(readOnly = true)
@@ -68,11 +91,13 @@ public class LpRewardService {
         WeekFields weekFields = WeekFields.of(Locale.getDefault());
         LocalDate start = LocalDate.ofYearDay(year, 1)
                 .with(weekFields.weekOfYear(), week)
-                .with(weekFields.dayOfWeek(), 1); // 월요일
+                .with(weekFields.dayOfWeek(), 1);
         LocalDate end = start.plusDays(6);
 
         return lpRewardRepo.findAllByUserAndRewardDateBetweenOrderByRecommendedAtDesc(user, start, end)
-                .stream().map(LpRewardResponse::fromEntity).toList();
+                .stream()
+                .map(LpRewardResponse::fromEntity)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -81,12 +106,16 @@ public class LpRewardService {
         LocalDate start = ym.atDay(1);
         LocalDate end = ym.atEndOfMonth();
         return lpRewardRepo.findAllByUserAndRewardDateBetweenOrderByRecommendedAtDesc(user, start, end)
-                .stream().map(LpRewardResponse::fromEntity).toList();
+                .stream()
+                .map(LpRewardResponse::fromEntity)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public List<LpRewardResponse> getAllRewards(User user) {
         return lpRewardRepo.findAllByUserOrderByRecommendedAtDesc(user)
-                .stream().map(LpRewardResponse::fromEntity).toList();
+                .stream()
+                .map(LpRewardResponse::fromEntity)
+                .toList();
     }
 }
