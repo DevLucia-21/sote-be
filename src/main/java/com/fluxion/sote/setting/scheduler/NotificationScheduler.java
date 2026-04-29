@@ -121,4 +121,37 @@ public class NotificationScheduler {
 
         log.info("[CHALLENGE 알림 스케줄러 종료] date={}", today);
     }
+
+    /**
+     * 주간 통계 확인 리마인더
+     * 매주 일요일 23:00 KST에 WEEKLY_STATS 알림을 켠 사용자에게 발송
+     */
+    @Scheduled(cron = "0 0 23 * * SUN", zone = "Asia/Seoul")
+    public void sendWeeklyStatsReminder() {
+        LocalDate today = LocalDate.now(KST);
+
+        List<User> users = notificationSettingRepository
+                .findUsersByNotificationType(NotificationType.WEEKLY_STATS);
+
+        log.info("[WEEKLY_STATS 알림 스케줄러 시작] date={}, targetCount={}", today, users.size());
+
+        for (User user : users) {
+            try {
+                fcmService.sendNotificationToAllDevices(
+                        user,
+                        "이번 주 감정 기록이 도착했어요",
+                        "한 주 동안의 감정 흐름을 확인해보세요."
+                );
+
+                log.info("[WEEKLY_STATS 알림 발송 요청 완료] userId={}, date={}",
+                        user.getId(), today);
+
+            } catch (Exception e) {
+                log.error("[WEEKLY_STATS 알림 발송 실패] userId={}, date={}",
+                        user.getId(), today, e);
+            }
+        }
+
+        log.info("[WEEKLY_STATS 알림 스케줄러 종료] date={}", today);
+    }
 }
