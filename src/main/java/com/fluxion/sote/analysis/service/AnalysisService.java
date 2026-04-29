@@ -115,7 +115,7 @@ public class AnalysisService {
                 diaryRepo.save(diary);
             }
 
-            sendEmotionDoneNotification(user);
+            sendDiaryAnalysisDoneNotification(user);
 
             System.out.println("[자동 감정분석 완료] Diary ID=" + diary.getId() +
                     ", Emotion=" + diary.getEmotionType());
@@ -149,27 +149,28 @@ public class AnalysisService {
     }
 
     /**
-     * 감정 분석 완료 알림 발송
+     * 일기 분석 완료 알림 발송
+     * 감정 분석과 음악 추천 완료를 하나의 알림으로 안내
      * 알림 발송 실패가 분석 저장을 막으면 안 됨
      */
-    private void sendEmotionDoneNotification(User user) {
+    private void sendDiaryAnalysisDoneNotification(User user) {
         try {
             boolean enabled = settingService.isNotificationEnabled(user, NotificationType.EMOTION_DONE);
 
             if (!enabled) {
-                System.out.println("[감정분석 완료 알림 스킵] EMOTION_DONE disabled, userId=" + user.getId());
+                System.out.println("[일기 분석 알림 스킵] EMOTION_DONE disabled, userId=" + user.getId());
                 return;
             }
 
             fcmService.sendNotificationToAllDevices(
                     user,
-                    "감정 분석 완료",
-                    "오늘의 감정 분석 결과가 도착했어요."
+                    "오늘의 일기 분석 완료",
+                    "감정 결과와 추천 음악이 도착했어요."
             );
 
-            System.out.println("[감정분석 완료 알림 발송] userId=" + user.getId());
+            System.out.println("[일기 분석 알림 발송] userId=" + user.getId());
         } catch (Exception e) {
-            System.err.println("감정분석 완료 알림 발송 실패: " +
+            System.err.println("일기 분석 알림 발송 실패: " +
                     e.getClass().getSimpleName() + " - " +
                     (e.getMessage() != null ? e.getMessage() : "no message"));
         }
