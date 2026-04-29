@@ -80,5 +80,5 @@ flyway {
 	user = 'sote_user'
 	password = System.getenv("DB_PASSWORD") ?: ""
 	locations = ['classpath:db/migration']
-	cleanDisabled = false
+	cleanDisabled = true
 }

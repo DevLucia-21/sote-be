@@ -28,14 +28,21 @@ public class LpRewardService {
     private final SpotifyService spotifyService;
 
     /**
-     * 전시회 버전:
-     * - LP 보상 하루 1회 제한 제거
-     * - 챌린지 완료할 때마다 무제한 LP 생성
-     * - Spotify 조회 실패해도 기본값으로 저장
+     * LP 보상 지급
+     * - 하루 1개만 지급
+     * - 이미 오늘 받은 LP가 있으면 기존 보상을 반환
+     * - Spotify 조회 실패 시 기본 음악 정보로 저장
      */
     @Transactional
     public LpRewardResponse grantReward(User user, Diary diary, String title, String artist, String album) {
         LocalDate today = LocalDate.now();
+
+        LpReward existingReward = lpRewardRepo.findByUserAndRewardDate(user, today)
+                .orElse(null);
+
+        if (existingReward != null) {
+            return LpRewardResponse.fromEntity(existingReward);
+        }
 
         Map<String, String> trackInfo = Collections.emptyMap();
 
@@ -66,6 +73,7 @@ public class LpRewardService {
         if (trackInfo == null) {
             return fallback;
         }
+
         String value = trackInfo.get(key);
         return (value == null || value.isBlank()) ? fallback : value;
     }
@@ -74,6 +82,7 @@ public class LpRewardService {
         if (trackInfo == null) {
             return null;
         }
+
         String value = trackInfo.get(key);
         return (value == null || value.isBlank()) ? null : value;
     }
@@ -81,6 +90,7 @@ public class LpRewardService {
     @Transactional(readOnly = true)
     public LpRewardResponse getTodayReward(User user) {
         LocalDate today = LocalDate.now();
+
         return lpRewardRepo.findByUserAndRewardDate(user, today)
                 .map(LpRewardResponse::fromEntity)
                 .orElse(null);
@@ -89,9 +99,11 @@ public class LpRewardService {
     @Transactional(readOnly = true)
     public List<LpRewardResponse> getWeeklyRewards(User user, int year, int week) {
         WeekFields weekFields = WeekFields.of(Locale.getDefault());
+
         LocalDate start = LocalDate.ofYearDay(year, 1)
                 .with(weekFields.weekOfYear(), week)
                 .with(weekFields.dayOfWeek(), 1);
+
         LocalDate end = start.plusDays(6);
 
         return lpRewardRepo.findAllByUserAndRewardDateBetweenOrderByRecommendedAtDesc(user, start, end)
@@ -105,6 +117,7 @@ public class LpRewardService {
         YearMonth ym = YearMonth.of(year, month);
         LocalDate start = ym.atDay(1);
         LocalDate end = ym.atEndOfMonth();
+
         return lpRewardRepo.findAllByUserAndRewardDateBetweenOrderByRecommendedAtDesc(user, start, end)
                 .stream()
                 .map(LpRewardResponse::fromEntity)
