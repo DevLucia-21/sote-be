@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import com.fluxion.sote.challenge.entity.UserChallenge;
+import com.fluxion.sote.challenge.repository.UserChallengeRepository;
+import java.util.Optional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -24,6 +27,7 @@ public class NotificationScheduler {
     private final NotificationSettingRepository notificationSettingRepository;
     private final DiaryRepository diaryRepository;
     private final FCMService fcmService;
+    private final UserChallengeRepository userChallengeRepository;
 
     /**
      * 오늘 일기 작성 리마인더
@@ -65,5 +69,56 @@ public class NotificationScheduler {
         }
 
         log.info("[DIARY 알림 스케줄러 종료] date={}", today);
+    }
+
+    /**
+     * 오늘의 챌린지 수행 리마인더
+     * 매일 22:30 KST에 CHALLENGE 알림을 켠 사용자 중
+     * 오늘 추천된 챌린지를 아직 완료하지 않은 사용자에게 발송
+     */
+    @Scheduled(cron = "0 30 22 * * *", zone = "Asia/Seoul")
+    public void sendChallengeReminder() {
+        LocalDate today = LocalDate.now(KST);
+
+        List<User> users = notificationSettingRepository
+                .findUsersByNotificationType(NotificationType.CHALLENGE);
+
+        log.info("[CHALLENGE 알림 스케줄러 시작] date={}, targetCount={}", today, users.size());
+
+        for (User user : users) {
+            try {
+                Optional<UserChallenge> userChallenge =
+                        userChallengeRepository.findByUserAndDate(user, today);
+
+                if (userChallenge.isEmpty()) {
+                    log.info("[CHALLENGE 알림 스킵] 오늘 추천된 챌린지 없음 - userId={}, date={}",
+                            user.getId(), today);
+                    continue;
+                }
+
+                UserChallenge challenge = userChallenge.get();
+
+                if (challenge.isCompleted()) {
+                    log.info("[CHALLENGE 알림 스킵] 이미 챌린지 완료 - userId={}, date={}",
+                            user.getId(), today);
+                    continue;
+                }
+
+                fcmService.sendNotificationToAllDevices(
+                        user,
+                        "오늘의 챌린지를 완료해볼까요?",
+                        "아직 완료하지 않은 챌린지가 있어요."
+                );
+
+                log.info("[CHALLENGE 알림 발송 요청 완료] userId={}, date={}",
+                        user.getId(), today);
+
+            } catch (Exception e) {
+                log.error("[CHALLENGE 알림 발송 실패] userId={}, date={}",
+                        user.getId(), today, e);
+            }
+        }
+
+        log.info("[CHALLENGE 알림 스케줄러 종료] date={}", today);
     }
 }
