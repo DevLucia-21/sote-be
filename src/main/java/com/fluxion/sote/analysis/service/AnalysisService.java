@@ -25,6 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import com.fluxion.sote.setting.enums.NotificationType;
+import com.fluxion.sote.setting.service.FCMService;
+import com.fluxion.sote.setting.service.SettingService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -32,6 +35,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +48,8 @@ public class AnalysisService {
     private final DiaryRepository diaryRepo;
     private final SpotifyService spotifyService;
     private final ChallengeRecommendService challengeRecommendService;
+    private final FCMService fcmService;
+    private final SettingService settingService;
 
     private final ObjectMapper om = new ObjectMapper();
 
@@ -109,6 +115,8 @@ public class AnalysisService {
                 diaryRepo.save(diary);
             }
 
+            sendEmotionDoneNotification(user);
+
             System.out.println("[자동 감정분석 완료] Diary ID=" + diary.getId() +
                     ", Emotion=" + diary.getEmotionType());
 
@@ -135,6 +143,33 @@ public class AnalysisService {
             System.out.println("[오늘 챌린지 추천 완료] userId=" + user.getId() + ", date=" + today);
         } catch (Exception e) {
             System.err.println("오늘 챌린지 추천 실패: " +
+                    e.getClass().getSimpleName() + " - " +
+                    (e.getMessage() != null ? e.getMessage() : "no message"));
+        }
+    }
+
+    /**
+     * 감정 분석 완료 알림 발송
+     * 알림 발송 실패가 분석 저장을 막으면 안 됨
+     */
+    private void sendEmotionDoneNotification(User user) {
+        try {
+            boolean enabled = settingService.isNotificationEnabled(user, NotificationType.EMOTION_DONE);
+
+            if (!enabled) {
+                System.out.println("[감정분석 완료 알림 스킵] EMOTION_DONE disabled, userId=" + user.getId());
+                return;
+            }
+
+            fcmService.sendNotificationToAllDevices(
+                    user,
+                    "감정 분석 완료",
+                    "오늘의 감정 분석 결과가 도착했어요."
+            );
+
+            System.out.println("[감정분석 완료 알림 발송] userId=" + user.getId());
+        } catch (Exception e) {
+            System.err.println("감정분석 완료 알림 발송 실패: " +
                     e.getClass().getSimpleName() + " - " +
                     (e.getMessage() != null ? e.getMessage() : "no message"));
         }

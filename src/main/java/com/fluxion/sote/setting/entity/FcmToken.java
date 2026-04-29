@@ -9,6 +9,7 @@ import lombok.*;
 @Entity
 @Table(name = "fcm_tokens")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder

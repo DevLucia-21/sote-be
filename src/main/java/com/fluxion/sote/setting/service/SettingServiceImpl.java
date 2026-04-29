@@ -79,4 +79,10 @@ public class SettingServiceImpl implements SettingService {
     public ThemeSettingResponse getUserSettings() {
         return new ThemeSettingResponse(getCurrentThemeSetting());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isNotificationEnabled(User user, NotificationType type) {
+        return settingRepository.existsByUserAndNotificationType(user, type);
+    }
 }

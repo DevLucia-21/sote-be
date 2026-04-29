@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -43,8 +44,24 @@ public class FcmTokenServiceImpl implements FcmTokenService {
             return;
         }
 
-        if (fcmTokenRepository.existsByToken(token)) {
-            log.info("[FCM] 이미 등록된 토큰 - token={}, userId={}", token, user.getId());
+        Optional<FcmToken> existingToken = fcmTokenRepository.findByToken(token);
+
+        if (existingToken.isPresent()) {
+            FcmToken fcmToken = existingToken.get();
+
+            Long oldUserId = fcmToken.getUser() != null
+                    ? fcmToken.getUser().getId()
+                    : null;
+
+            fcmToken.setUser(user);
+            fcmToken.setDeviceType(deviceType);
+
+            FcmToken savedToken = fcmTokenRepository.saveAndFlush(fcmToken);
+
+            log.info("[FCM] 기존 토큰 사용자 갱신 완료 - tokenId={}, oldUserId={}, newUserId={}, deviceType={}",
+                    savedToken.getId(), oldUserId, user.getId(), deviceType);
+
+            log.info("[FCM] 토큰 테이블 row count={}", fcmTokenRepository.count());
             return;
         }
 
@@ -54,8 +71,12 @@ public class FcmTokenServiceImpl implements FcmTokenService {
                 .user(user)
                 .build();
 
-        fcmTokenRepository.save(fcmToken);
-        log.info("[FCM] 토큰 저장 완료 - token={}, deviceType={}, userId={}", token, deviceType, user.getId());
+        FcmToken savedToken = fcmTokenRepository.saveAndFlush(fcmToken);
+
+        log.info("[FCM] 신규 토큰 저장 완료 - tokenId={}, deviceType={}, userId={}",
+                savedToken.getId(), deviceType, user.getId());
+
+        log.info("[FCM] 토큰 테이블 row count={}", fcmTokenRepository.count());
     }
 
     /**
@@ -104,13 +125,29 @@ public class FcmTokenServiceImpl implements FcmTokenService {
             return;
         }
 
-        if (fcmTokenRepository.existsByToken(tokenValue)) {
-            log.info("[FCM] 이미 등록된 토큰 - token={}, userId={}", tokenValue, userId);
-            return;
-        }
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다. (userId=" + userId + ")"));
+
+        Optional<FcmToken> existingToken = fcmTokenRepository.findByToken(tokenValue);
+
+        if (existingToken.isPresent()) {
+            FcmToken fcmToken = existingToken.get();
+
+            Long oldUserId = fcmToken.getUser() != null
+                    ? fcmToken.getUser().getId()
+                    : null;
+
+            fcmToken.setUser(user);
+            fcmToken.setDeviceType(deviceType);
+
+            FcmToken savedToken = fcmTokenRepository.saveAndFlush(fcmToken);
+
+            log.info("[FCM] 기존 유저 토큰 갱신 완료 - tokenId={}, oldUserId={}, newUserId={}, deviceType={}",
+                    savedToken.getId(), oldUserId, userId, deviceType);
+
+            log.info("[FCM] 토큰 테이블 row count={}", fcmTokenRepository.count());
+            return;
+        }
 
         FcmToken token = FcmToken.builder()
                 .token(tokenValue)
@@ -118,7 +155,11 @@ public class FcmTokenServiceImpl implements FcmTokenService {
                 .user(user)
                 .build();
 
-        fcmTokenRepository.save(token);
-        log.info("[FCM] 유저 토큰 등록 완료 - userId={}, token={}, deviceType={}", userId, tokenValue, deviceType);
+        FcmToken savedToken = fcmTokenRepository.saveAndFlush(token);
+
+        log.info("[FCM] 유저 토큰 등록 완료 - tokenId={}, userId={}, deviceType={}",
+                savedToken.getId(), userId, deviceType);
+
+        log.info("[FCM] 토큰 테이블 row count={}", fcmTokenRepository.count());
     }
 }
