@@ -12,6 +12,7 @@ import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -58,6 +59,7 @@ public class FCMService {
     }
 
     // 특정 디바이스 타입에 전송 (기존 /send)
+    @Transactional
     public void sendNotificationToUser(User user, DeviceType deviceType, String title, String body) {
         List<FcmToken> tokens = fcmTokenRepository.findAllByUserAndDeviceType(user, deviceType);
         if (tokens.isEmpty()) {
@@ -80,7 +82,7 @@ public class FCMService {
     }
 
     //모든 기기(MOBILE + WATCH) 동시 발송 + 결과 JSON 반환 + 자동 만료 토큰 삭제
-
+    @Transactional
     public Map<String, Object> sendNotificationToAllDevices(User user, String title, String body) {
         List<FcmToken> tokens = fcmTokenRepository.findAllByUser(user);
 
