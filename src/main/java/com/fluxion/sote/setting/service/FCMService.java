@@ -44,8 +44,7 @@ public class FCMService {
             // 만료된 토큰 처리
             if (isTokenExpired(e)) {
                 log.warn("[FCM] 만료된 토큰 감지됨 → DB에서 삭제: {}", targetToken);
-                fcmTokenRepository.findByToken(targetToken)
-                        .ifPresent(fcmTokenRepository::delete);
+                fcmTokenRepository.deleteExpiredToken(targetToken);
             }
             throw e;
         }

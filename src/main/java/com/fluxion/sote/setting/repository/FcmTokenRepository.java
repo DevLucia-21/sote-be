@@ -5,6 +5,10 @@ import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.setting.entity.FcmToken;
 import com.fluxion.sote.setting.enums.DeviceType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +22,11 @@ public interface FcmTokenRepository extends JpaRepository<FcmToken, Long> {
     void deleteByToken(String token);
 
     void deleteAllByUser(User user);
+
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM FcmToken f WHERE f.token = :token")
+    void deleteExpiredToken(@Param("token") String token);
 
     //모든 기기(MOBILE+WATCH) 조회
     List<FcmToken> findAllByUser(User user);

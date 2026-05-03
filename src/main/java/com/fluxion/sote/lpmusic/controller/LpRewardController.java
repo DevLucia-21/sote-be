@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.temporal.WeekFields;
 import java.util.List;
 import java.util.Locale;
+import java.time.ZoneId;
 
 @RestController
 @RequestMapping("/api/lp")
@@ -18,6 +19,7 @@ import java.util.Locale;
 public class LpRewardController {
 
     private final LpRewardService rewardService;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @GetMapping("/today")
     public ResponseEntity<LpRewardResponse> getTodayReward(@RequestAttribute("user") User user) {
@@ -31,7 +33,7 @@ public class LpRewardController {
             @RequestParam(required = false) Integer week
     ) {
         if (year == null || week == null) {
-            LocalDate now = LocalDate.now();
+            LocalDate now = LocalDate.now(KST);
             WeekFields weekFields = WeekFields.of(Locale.getDefault());
             year = now.getYear();
             week = now.get(weekFields.weekOfWeekBasedYear());

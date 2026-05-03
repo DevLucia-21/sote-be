@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +24,7 @@ public class QuestionServiceImpl implements QuestionService {
     private Question toEntity(QuestionDto dto) {
         return new Question(dto.getContent(), dto.getQuestionDay());
     }
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Override
     public List<QuestionDto> getAllQuestions() {
@@ -60,7 +62,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public QuestionDto getTodayQuestion() {
-        int day = LocalDate.now().getDayOfMonth();
+        int day = LocalDate.now(KST).getDayOfMonth();
         Question q = repo.findById((long) day)
                 .orElseThrow(() -> new RuntimeException("오늘의 질문이 없습니다: day=" + day));
         return toDto(q);

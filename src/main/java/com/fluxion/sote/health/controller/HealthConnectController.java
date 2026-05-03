@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.time.ZoneId;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,6 +20,7 @@ import java.util.List;
 public class HealthConnectController {
 
     private final DailyHealthSummaryService service;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     // 모바일 앱 → Health Connect 요약 업로드
     @PostMapping("/mobile/health-connect/daily")
@@ -61,7 +63,7 @@ public class HealthConnectController {
             @RequestBody DailyWaterUpdateRequest request
     ) {
         LocalDate date = request.getDate() == null || request.getDate().isBlank()
-                ? LocalDate.now()
+                ? LocalDate.now(KST)
                 : LocalDate.parse(request.getDate());
 
         return ResponseEntity.ok(service.addWater(date, request.getAmountMl()));
@@ -73,7 +75,7 @@ public class HealthConnectController {
             @RequestBody DailyCaffeineUpdateRequest request
     ) {
         LocalDate date = request.getDate() == null || request.getDate().isBlank()
-                ? LocalDate.now()
+                ? LocalDate.now(KST)
                 : LocalDate.parse(request.getDate());
 
         return ResponseEntity.ok(service.addCaffeine(date, request.getAmountMg()));
@@ -85,7 +87,7 @@ public class HealthConnectController {
             @RequestBody DailySleepUpdateRequest request
     ) {
         LocalDate date = request.getDate() == null || request.getDate().isBlank()
-                ? LocalDate.now()
+                ? LocalDate.now(KST)
                 : LocalDate.parse(request.getDate());
 
         return ResponseEntity.ok(service.setSleepMinutes(date, request.getMinutes()));

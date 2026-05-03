@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class DiaryServiceImpl implements DiaryService {
     private final DiaryRepository diaryRepo;
     private final KeywordRepository keywordRepository;
     private final ApplicationEventPublisher publisher;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     // ================== 공통 검증 ==================
 
@@ -62,7 +64,7 @@ public class DiaryServiceImpl implements DiaryService {
                           WriteType writeType, List<Long> keywordIds, EmotionType emotionType) {
 
         if (date == null) {
-            date = LocalDate.now();
+            date = LocalDate.now(KST);
         }
 
         validateDiaryNotExists(user, date);
@@ -98,7 +100,7 @@ public class DiaryServiceImpl implements DiaryService {
                              List<Long> keywordIds, EmotionType emotionType) {
 
         if (date == null) {
-            date = LocalDate.now();
+            date = LocalDate.now(KST);
         }
 
         validateDiaryNotExists(user, date);
@@ -237,7 +239,7 @@ public class DiaryServiceImpl implements DiaryService {
                                 LocalDate date, List<Long> keywordIds, EmotionType emotionType) {
 
         if (date == null) {
-            date = LocalDate.now();
+            date = LocalDate.now(KST);
         }
 
         validateDiaryNotExists(user, date);

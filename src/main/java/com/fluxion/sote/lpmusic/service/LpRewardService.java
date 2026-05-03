@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,7 @@ public class LpRewardService {
 
     private final LpRewardRepository lpRewardRepo;
     private final SpotifyService spotifyService;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /**
      * LP 보상 지급
@@ -35,7 +37,7 @@ public class LpRewardService {
      */
     @Transactional
     public LpRewardResponse grantReward(User user, Diary diary, String title, String artist, String album) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KST);
 
         LpReward existingReward = lpRewardRepo.findByUserAndRewardDate(user, today)
                 .orElse(null);
@@ -89,7 +91,7 @@ public class LpRewardService {
 
     @Transactional(readOnly = true)
     public LpRewardResponse getTodayReward(User user) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KST);
 
         return lpRewardRepo.findByUserAndRewardDate(user, today)
                 .map(LpRewardResponse::fromEntity)

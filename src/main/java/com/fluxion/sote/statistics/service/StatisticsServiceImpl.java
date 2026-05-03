@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final UserBadgeStatisticsRepository userBadgeStatisticsRepository;
     private final MusicStatisticsRepository musicStatisticsRepository;
     private final KeywordStatisticsRepository keywordStatisticsRepository;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Override
     public Object getDiaryStats(String period, Integer year, Integer month) {
@@ -33,7 +35,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             long totalCount = diaryStatisticsRepository.countTotalByUserId(userId);
             return new DiaryTotalResponse((int) totalCount);
         } else if ("monthly".equalsIgnoreCase(period)) {
-            LocalDate now = LocalDate.now();
+            LocalDate now = LocalDate.now(KST);
             int targetYear = (year != null) ? year : now.getYear();
             int targetMonth = (month != null) ? month : now.getMonthValue();
 
@@ -77,7 +79,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         int weekOffset = (offset != null) ? offset : 0;
 
-        LocalDate end = LocalDate.now().plusWeeks(weekOffset);
+        LocalDate end = LocalDate.now(KST).plusWeeks(weekOffset);
         LocalDate start = end.minusDays(6);
 
         long total = challengeStatisticsRepository.countWeeklyChallenges(userId, start, end);
@@ -96,7 +98,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             throw new IllegalArgumentException("Only monthly period supported for emotion performance");
         }
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(KST);
         YearMonth targetMonth = (month != null)
                 ? YearMonth.parse(month)
                 : YearMonth.from(now);
@@ -145,7 +147,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             throw new IllegalArgumentException("Only monthly period supported for music stats");
         }
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(KST);
         int targetYear = (year != null) ? year : now.getYear();
         int targetMonth = (month != null) ? month : now.getMonthValue();
         LocalDate targetDate = LocalDate.of(targetYear, targetMonth, 1);
@@ -174,7 +176,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     public KeywordRankingResponse getKeywordRanking(String period, Integer year, Integer month) {
         Long userId = SecurityUtil.getCurrentUserId();
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(KST);
         int targetYear = (year != null) ? year : now.getYear();
         int targetMonth = (month != null) ? month : now.getMonthValue();
 

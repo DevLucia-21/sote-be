@@ -1,4 +1,3 @@
-// src/main/java/com/fluxion/sote/setting/service/FcmTokenServiceImpl.java
 package com.fluxion.sote.setting.service;
 
 import com.fluxion.sote.auth.entity.User;
@@ -8,10 +7,11 @@ import com.fluxion.sote.setting.entity.FcmToken;
 import com.fluxion.sote.setting.enums.DeviceType;
 import com.fluxion.sote.setting.repository.FcmTokenRepository;
 import com.fluxion.sote.user.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Optional;
 
 @Service
@@ -33,6 +33,9 @@ public class FcmTokenServiceImpl implements FcmTokenService {
 
     /**
      * 현재 로그인된 유저 기준으로 FCM 토큰 저장
+     *
+     * 같은 브라우저의 FCM 토큰이 이미 다른 사용자에게 연결되어 있을 수 있으므로,
+     * 기존 토큰이 있으면 새로 저장하지 않고 현재 로그인 사용자로 갱신한다.
      */
     @Override
     @Transactional
@@ -56,12 +59,8 @@ public class FcmTokenServiceImpl implements FcmTokenService {
             fcmToken.setUser(user);
             fcmToken.setDeviceType(deviceType);
 
-            FcmToken savedToken = fcmTokenRepository.saveAndFlush(fcmToken);
-
             log.info("[FCM] 기존 토큰 사용자 갱신 완료 - tokenId={}, oldUserId={}, newUserId={}, deviceType={}",
-                    savedToken.getId(), oldUserId, user.getId(), deviceType);
-
-            log.info("[FCM] 토큰 테이블 row count={}", fcmTokenRepository.count());
+                    fcmToken.getId(), oldUserId, user.getId(), deviceType);
             return;
         }
 
@@ -71,12 +70,10 @@ public class FcmTokenServiceImpl implements FcmTokenService {
                 .user(user)
                 .build();
 
-        FcmToken savedToken = fcmTokenRepository.saveAndFlush(fcmToken);
+        FcmToken savedToken = fcmTokenRepository.save(fcmToken);
 
         log.info("[FCM] 신규 토큰 저장 완료 - tokenId={}, deviceType={}, userId={}",
                 savedToken.getId(), deviceType, user.getId());
-
-        log.info("[FCM] 토큰 테이블 row count={}", fcmTokenRepository.count());
     }
 
     /**
@@ -85,6 +82,11 @@ public class FcmTokenServiceImpl implements FcmTokenService {
     @Override
     @Transactional
     public void deleteToken(String token) {
+        if (token == null || token.isBlank()) {
+            log.warn("[FCM] 비어있는 토큰 삭제 시도");
+            return;
+        }
+
         if (!fcmTokenRepository.existsByToken(token)) {
             log.warn("[FCM] 삭제 시도한 토큰이 존재하지 않음 - token={}", token);
             return;
@@ -116,6 +118,8 @@ public class FcmTokenServiceImpl implements FcmTokenService {
 
     /**
      * 특정 유저 기준으로 토큰 등록 (기기 타입 포함)
+     *
+     * 기존 토큰이 있으면 해당 토큰의 소유자를 지정된 사용자로 갱신한다.
      */
     @Override
     @Transactional
@@ -140,12 +144,8 @@ public class FcmTokenServiceImpl implements FcmTokenService {
             fcmToken.setUser(user);
             fcmToken.setDeviceType(deviceType);
 
-            FcmToken savedToken = fcmTokenRepository.saveAndFlush(fcmToken);
-
             log.info("[FCM] 기존 유저 토큰 갱신 완료 - tokenId={}, oldUserId={}, newUserId={}, deviceType={}",
-                    savedToken.getId(), oldUserId, userId, deviceType);
-
-            log.info("[FCM] 토큰 테이블 row count={}", fcmTokenRepository.count());
+                    fcmToken.getId(), oldUserId, userId, deviceType);
             return;
         }
 
@@ -155,11 +155,9 @@ public class FcmTokenServiceImpl implements FcmTokenService {
                 .user(user)
                 .build();
 
-        FcmToken savedToken = fcmTokenRepository.saveAndFlush(token);
+        FcmToken savedToken = fcmTokenRepository.save(token);
 
         log.info("[FCM] 유저 토큰 등록 완료 - tokenId={}, userId={}, deviceType={}",
                 savedToken.getId(), userId, deviceType);
-
-        log.info("[FCM] 토큰 테이블 row count={}", fcmTokenRepository.count());
     }
 }

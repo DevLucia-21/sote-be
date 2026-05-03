@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class StressService {
 
     private final StressRecordRepository stressRepo;
     private final UserRepository userRepo;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     // 🔹 기존: 현재 로그인 사용자 기준
     public StressDto saveStress(Double hrv, LocalDateTime measuredAt) {
@@ -62,7 +64,7 @@ public class StressService {
 
     public StressDto getTodayStress() {
         User user = SecurityUtil.getCurrentUser();
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KST);
         LocalDateTime start = today.atStartOfDay();
         LocalDateTime end = today.atTime(LocalTime.MAX);
 

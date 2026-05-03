@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.time.ZoneId;
 
 @RestController
 @RequestMapping("/api/diaries")
@@ -20,6 +21,7 @@ import java.util.List;
 public class DiaryController {
 
     private final DiaryService diaryService;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private User getCurrentUser() {
         return SecurityUtil.getCurrentUser();
@@ -93,7 +95,7 @@ public class DiaryController {
     @GetMapping("/today/exist")
     public ResponseEntity<Boolean> checkTodayDiary() {
         User user = getCurrentUser();
-        boolean exists = diaryService.existsByDate(user, LocalDate.now());
+        boolean exists = diaryService.existsByDate(user, LocalDate.now(KST));
         return ResponseEntity.ok(exists);
     }
 

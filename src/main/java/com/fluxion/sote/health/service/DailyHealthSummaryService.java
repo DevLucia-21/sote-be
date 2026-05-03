@@ -12,12 +12,14 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
 public class DailyHealthSummaryService {
 
     private final DailyHealthSummaryRepository repository;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /**
      * 모바일 앱(또는 Health Connect)에서 하루 요약 전체 동기화
@@ -50,7 +52,7 @@ public class DailyHealthSummaryService {
      */
     public DailyHealthSummaryDto getTodayForWatch() {
         User user = SecurityUtil.getCurrentUser();
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KST);
 
         DailyHealthSummary summary = repository
                 .findByUserAndDate(user, today)

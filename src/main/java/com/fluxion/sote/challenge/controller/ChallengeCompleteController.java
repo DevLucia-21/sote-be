@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 @RestController
 @RequestMapping("/api/challenge")
@@ -19,6 +20,7 @@ public class ChallengeCompleteController {
 
     private final ChallengeCompleteService completeService;
     private final UserChallengeRepository userChallengeRepo;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /**
      * 챌린지 완료 처리
@@ -33,7 +35,7 @@ public class ChallengeCompleteController {
         LpRewardResponse reward = completeService.completeTodayChallenge(user, challengeId);
 
         // 오늘 챌린지 상태 조회
-        UserChallenge todayChallenge = userChallengeRepo.findByUserAndDate(user, LocalDate.now())
+        UserChallenge todayChallenge = userChallengeRepo.findByUserAndDate(user, LocalDate.now(KST))
                 .orElseThrow(() -> new IllegalStateException("오늘 추천된 챌린지가 없습니다."));
 
         TodayChallengeStatus dto = TodayChallengeStatus.builder()
