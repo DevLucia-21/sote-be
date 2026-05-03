@@ -1,8 +1,7 @@
 package com.fluxion.sote.setting.repository;
 
-import com.fluxion.sote.setting.entity.NotificationSetting;
-import com.fluxion.sote.setting.entity.NotificationSetting.Pk;
 import com.fluxion.sote.auth.entity.User;
+import com.fluxion.sote.setting.entity.NotificationSetting;
 import com.fluxion.sote.setting.enums.NotificationType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -16,9 +15,10 @@ public interface NotificationSettingRepository extends JpaRepository<Notificatio
 
     List<NotificationSetting> findByUser(User user);
 
-    @Modifying
     @Transactional
-    void deleteByUser(User user);
+    @Modifying
+    @Query("DELETE FROM NotificationSetting ns WHERE ns.user = :user")
+    void deleteByUser(@Param("user") User user);
 
     boolean existsByUserAndNotificationType(User user, NotificationType notificationType);
 
