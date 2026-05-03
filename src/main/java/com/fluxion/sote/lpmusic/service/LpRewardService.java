@@ -13,12 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +27,7 @@ public class LpRewardService {
 
     private final LpRewardRepository lpRewardRepo;
     private final SpotifyService spotifyService;
+
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /**
@@ -98,20 +99,33 @@ public class LpRewardService {
                 .orElse(null);
     }
 
+    /**
+     * 권장 방식: 날짜 범위 기반 주간 LP 조회
+     * 월이 걸치는 주차에서도 정확한 범위의 LP만 조회할 수 있음
+     */
+    @Transactional(readOnly = true)
+    public List<LpRewardResponse> getWeeklyRewards(User user, LocalDate startDate, LocalDate endDate) {
+        return lpRewardRepo.findAllByUserAndRewardDateBetweenOrderByRecommendedAtDesc(user, startDate, endDate)
+                .stream()
+                .map(LpRewardResponse::fromEntity)
+                .toList();
+    }
+
+    /**
+     * 기존 호환 방식: year + week 기반 주간 LP 조회
+     * 프론트는 가능하면 startDate/endDate 방식을 사용하는 것을 권장
+     */
     @Transactional(readOnly = true)
     public List<LpRewardResponse> getWeeklyRewards(User user, int year, int week) {
-        WeekFields weekFields = WeekFields.of(Locale.getDefault());
+        WeekFields weekFields = WeekFields.of(Locale.KOREA);
 
         LocalDate start = LocalDate.ofYearDay(year, 1)
-                .with(weekFields.weekOfYear(), week)
+                .with(weekFields.weekOfWeekBasedYear(), week)
                 .with(weekFields.dayOfWeek(), 1);
 
         LocalDate end = start.plusDays(6);
 
-        return lpRewardRepo.findAllByUserAndRewardDateBetweenOrderByRecommendedAtDesc(user, start, end)
-                .stream()
-                .map(LpRewardResponse::fromEntity)
-                .toList();
+        return getWeeklyRewards(user, start, end);
     }
 
     @Transactional(readOnly = true)

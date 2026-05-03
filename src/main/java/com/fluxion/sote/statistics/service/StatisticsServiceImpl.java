@@ -70,17 +70,38 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public ChallengeCompletionResponse getChallengeCompletion(String period, Integer offset) {
+    public ChallengeCompletionResponse getChallengeCompletion(
+            String period,
+            Integer offset,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (!"weekly".equalsIgnoreCase(period)) {
             throw new IllegalArgumentException("Only weekly period supported for challenge completion");
         }
 
-        int weekOffset = (offset != null) ? offset : 0;
+        LocalDate start;
+        LocalDate end;
 
-        LocalDate end = LocalDate.now(KST).plusWeeks(weekOffset);
-        LocalDate start = end.minusDays(6);
+        if (startDate != null || endDate != null) {
+            if (startDate == null || endDate == null) {
+                throw new IllegalArgumentException("startDate와 endDate는 함께 전달해야 합니다.");
+            }
+
+            if (endDate.isBefore(startDate)) {
+                throw new IllegalArgumentException("endDate는 startDate보다 빠를 수 없습니다.");
+            }
+
+            start = startDate;
+            end = endDate;
+        } else {
+            int weekOffset = (offset != null) ? offset : 0;
+
+            end = LocalDate.now(KST).plusWeeks(weekOffset);
+            start = end.minusDays(6);
+        }
 
         long total = challengeStatisticsRepository.countWeeklyChallenges(userId, start, end);
         long completed = challengeStatisticsRepository.countWeeklyCompleted(userId, start, end);

@@ -1,11 +1,13 @@
 package com.fluxion.sote.statistics.controller;
 
-import com.fluxion.sote.statistics.dto.ChallengeBadgeResponse;
 import com.fluxion.sote.statistics.dto.*;
 import com.fluxion.sote.statistics.service.StatisticsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/statistics")
@@ -18,10 +20,10 @@ public class StatisticsController {
     @GetMapping("/diary")
     public ResponseEntity<?> getDiaryStats(
             @RequestParam String period,
-            @RequestParam(required = false) Integer year,  //수정
-            @RequestParam(required = false) Integer month  //수정
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month
     ) {
-        return ResponseEntity.ok(statisticsService.getDiaryStats(period, year, month));  //수정
+        return ResponseEntity.ok(statisticsService.getDiaryStats(period, year, month));
     }
 
     // 2) 감정 분석
@@ -30,19 +32,32 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getAnalysisStats(period));
     }
 
-    // 3) 챌린지
+    // 3) 챌린지 - 주간 완료율
     @GetMapping("/challenges/completion-rate")
     public ResponseEntity<ChallengeCompletionResponse> getChallengeCompletion(
             @RequestParam String period,
-            @RequestParam(required = false) Integer offset  //수정
+
+            // 기존 호환용: 이번 주 기준 offset
+            @RequestParam(required = false) Integer offset,
+
+            // 권장 방식: 선택 주차의 날짜 범위
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate
     ) {
-        return ResponseEntity.ok(statisticsService.getChallengeCompletion(period, offset));  //수정
+        return ResponseEntity.ok(
+                statisticsService.getChallengeCompletion(period, offset, startDate, endDate)
+        );
     }
 
     @GetMapping("/challenges/emotion-performance")
     public ResponseEntity<ChallengeEmotionPerformanceResponse> getChallengeEmotionPerformance(
             @RequestParam String period,
-            @RequestParam(required = false) String month // ← 추가
+            @RequestParam(required = false) String month
     ) {
         return ResponseEntity.ok(statisticsService.getChallengeEmotionPerformance(period, month));
     }
@@ -56,20 +71,20 @@ public class StatisticsController {
     @GetMapping("/music")
     public ResponseEntity<MusicStatsResponse> getMusicStats(
             @RequestParam String period,
-            @RequestParam(required = false) Integer year,  //수정
-            @RequestParam(required = false) Integer month  //수정
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month
     ) {
-        return ResponseEntity.ok(statisticsService.getMusicStats(period, year, month));  //수정
+        return ResponseEntity.ok(statisticsService.getMusicStats(period, year, month));
     }
 
     // 5) 키워드
     @GetMapping("/keywords/ranking")
     public ResponseEntity<KeywordRankingResponse> getKeywordRanking(
             @RequestParam String period,
-            @RequestParam(required = false) Integer year,  //수정
-            @RequestParam(required = false) Integer month  //수정
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month
     ) {
-        return ResponseEntity.ok(statisticsService.getKeywordRanking(period, year, month));  //수정
+        return ResponseEntity.ok(statisticsService.getKeywordRanking(period, year, month));
     }
 
     @GetMapping("/keywords/emotion-ranking")

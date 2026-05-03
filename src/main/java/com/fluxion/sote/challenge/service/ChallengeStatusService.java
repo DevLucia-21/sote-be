@@ -5,6 +5,7 @@ import com.fluxion.sote.challenge.dto.TodayChallengeStatus;
 import com.fluxion.sote.challenge.repository.UserChallengeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -14,13 +15,26 @@ import java.time.ZoneId;
 public class ChallengeStatusService {
 
     private final UserChallengeRepository userChallengeRepo;
+
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /**
      * 오늘 챌린지 추천 여부 및 완료 여부 조회
      */
+    @Transactional(readOnly = true)
     public TodayChallengeStatus getTodayStatus(User user) {
-        return userChallengeRepo.findByUserAndDate(user, LocalDate.now(KST))
+        return getStatus(user, null);
+    }
+
+    /**
+     * 특정 날짜의 챌린지 추천 여부 및 완료 여부 조회
+     * date가 null이면 KST 기준 오늘 날짜로 조회
+     */
+    @Transactional(readOnly = true)
+    public TodayChallengeStatus getStatus(User user, LocalDate date) {
+        LocalDate targetDate = date != null ? date : LocalDate.now(KST);
+
+        return userChallengeRepo.findByUserAndDate(user, targetDate)
                 .map(ch -> TodayChallengeStatus.builder()
                         .recommended(true)
                         .completed(ch.isCompleted())
@@ -30,7 +44,7 @@ public class ChallengeStatusService {
                         .category(ch.getChallenge().getCategory())
                         .completedAt(ch.getCompletedAt())
                         .build())
-                .orElse(TodayChallengeStatus.builder()
+                .orElseGet(() -> TodayChallengeStatus.builder()
                         .recommended(false)
                         .completed(false)
                         .build());
