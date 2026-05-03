@@ -1,4 +1,3 @@
-// src/main/java/com/fluxion/sote/setting/repository/FcmTokenRepository.java
 package com.fluxion.sote.setting.repository;
 
 import com.fluxion.sote.auth.entity.User;
@@ -19,18 +18,24 @@ public interface FcmTokenRepository extends JpaRepository<FcmToken, Long> {
 
     boolean existsByToken(String token);
 
-    void deleteByToken(String token);
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM FcmToken f WHERE f.token = :token")
+    void deleteByToken(@Param("token") String token);
 
-    void deleteAllByUser(User user);
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM FcmToken f WHERE f.user = :user")
+    void deleteAllByUser(@Param("user") User user);
 
     @Transactional
     @Modifying
     @Query("DELETE FROM FcmToken f WHERE f.token = :token")
     void deleteExpiredToken(@Param("token") String token);
 
-    //모든 기기(MOBILE+WATCH) 조회
+    // 모든 기기(MOBILE + WATCH) 조회
     List<FcmToken> findAllByUser(User user);
 
-    //특정 기기(MOBILE 또는 WATCH)만 조회
+    // 특정 기기(MOBILE 또는 WATCH)만 조회
     List<FcmToken> findAllByUserAndDeviceType(User user, DeviceType deviceType);
 }

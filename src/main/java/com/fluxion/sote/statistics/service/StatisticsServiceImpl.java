@@ -171,20 +171,33 @@ public class StatisticsServiceImpl implements StatisticsService {
         LocalDate now = LocalDate.now(KST);
         int targetYear = (year != null) ? year : now.getYear();
         int targetMonth = (month != null) ? month : now.getMonthValue();
-        LocalDate targetDate = LocalDate.of(targetYear, targetMonth, 1);
 
-        OffsetDateTime start = targetDate.withDayOfMonth(1).atStartOfDay().atOffset(ZoneOffset.UTC);
-        OffsetDateTime end = targetDate.withDayOfMonth(targetDate.lengthOfMonth()).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+        YearMonth targetMonthValue = YearMonth.of(targetYear, targetMonth);
+        LocalDate start = targetMonthValue.atDay(1);
+        LocalDate end = targetMonthValue.atEndOfMonth();
 
-        long monthlyCount = musicStatisticsRepository.countMonthlyRecommendedTracks(userId, start, end);
+        long monthlyCount = musicStatisticsRepository.countMonthlyRecommendedTracks(
+                userId,
+                start,
+                end
+        );
 
-        List<Object[]> results = musicStatisticsRepository.countEmotionGenreMapping(userId);
+        List<Object[]> results = musicStatisticsRepository.countMonthlyEmotionGenreMapping(
+                userId,
+                start,
+                end
+        );
 
         Map<String, Map<String, Long>> mapping = new HashMap<>();
+
         for (Object[] row : results) {
             String emotion = (String) row[0];
             String genre = (String) row[1];
             Long count = row[2] != null ? ((Number) row[2]).longValue() : 0L;
+
+            if (emotion == null || genre == null || genre.isBlank()) {
+                continue;
+            }
 
             mapping.putIfAbsent(emotion, new HashMap<>());
             mapping.get(emotion).put(genre, count);
