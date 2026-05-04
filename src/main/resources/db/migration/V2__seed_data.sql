@@ -18,8 +18,7 @@ INSERT INTO public.users (
   character
 )
 VALUES (
-  'rlxkemd21@gmail.com',
-  -- BCryptPasswordEncoder.encode("pass1234")로 생성한 암호 해시 예시
+  'test@example.com',
   '$2a$10$RPUXf.IMjszb5Q6t9EzyZ.Z2Nq.46zBoOJVdCzzLlzlLhS3sxjLjK',
   'tester',
   'ROLE_USER',
