@@ -40,5 +40,7 @@ out/
 /src/main/resources/firebase/
 /*.json
 
+!/src/main/resources/application-example.yml
+
 # 환경 변수 파일
 .env
