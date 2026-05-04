@@ -16,4 +16,6 @@ public interface FcmTokenService {
     void deleteToken(String token);
 
     void deleteAllTokensForCurrentUser();
+
+    void deleteExpiredToken(String token);
 }

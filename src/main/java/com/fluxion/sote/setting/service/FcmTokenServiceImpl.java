@@ -10,6 +10,7 @@ import com.fluxion.sote.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -159,5 +160,22 @@ public class FcmTokenServiceImpl implements FcmTokenService {
 
         log.info("[FCM] 유저 토큰 등록 완료 - tokenId={}, userId={}, deviceType={}",
                 savedToken.getId(), userId, deviceType);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deleteExpiredToken(String token) {
+        if (token == null || token.isBlank()) {
+            log.warn("[FCM] 비어있는 만료 토큰 삭제 시도");
+            return;
+        }
+
+        if (!fcmTokenRepository.existsByToken(token)) {
+            log.warn("[FCM] 삭제할 만료 토큰이 존재하지 않음");
+            return;
+        }
+
+        fcmTokenRepository.deleteExpiredToken(token);
+        log.info("[FCM] 만료 토큰 삭제 완료");
     }
 }

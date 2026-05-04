@@ -22,6 +22,7 @@ import java.util.*;
 public class FCMService {
 
     private final FcmTokenRepository fcmTokenRepository;
+    private final FcmTokenService fcmTokenService;
 
     //내부 전송 로직 (Firebase 예외 감지 포함)
     private String sendNotificationInternal(String targetToken, String title, String body)
@@ -43,8 +44,8 @@ public class FCMService {
         } catch (FirebaseMessagingException e) {
             // 만료된 토큰 처리
             if (isTokenExpired(e)) {
-                log.warn("[FCM] 만료된 토큰 감지됨 → DB에서 삭제: {}", targetToken);
-                fcmTokenRepository.deleteExpiredToken(targetToken);
+                log.warn("[FCM] 만료된 토큰 감지됨 → DB에서 삭제 처리");
+                fcmTokenService.deleteExpiredToken(targetToken);
             }
             throw e;
         }
