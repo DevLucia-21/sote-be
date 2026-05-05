@@ -16,6 +16,4 @@ public class AiClientProperties {
 
     public int getTimeoutSeconds() { return timeoutSeconds; }
     public void setTimeoutSeconds(int timeoutSeconds) { this.timeoutSeconds = timeoutSeconds; }
-
-    private String internalKey;
 }

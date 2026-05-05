@@ -1,6 +1,5 @@
 package com.fluxion.sote.ocr.controller;
 
-import com.fluxion.sote.analysis.config.AiClientProperties;
 import com.fluxion.sote.auth.entity.User;
 import com.fluxion.sote.diary.dto.DiaryDto;
 import com.fluxion.sote.diary.dto.OcrRequest;
@@ -39,7 +38,6 @@ public class OcrController {
 
     private final DiaryService diaryService;
     private final UserRepository userRepository;
-    private final AiClientProperties props;
 
     @Value("${fastapi.ocr.url:http://localhost:8000/ocr/preview}")
     private String fastApiOcrUrl;
@@ -59,7 +57,6 @@ public class OcrController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.set("Authorization", authHeader);
-        headers.set("X-SOTE-AI-KEY", props.getInternalKey());
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new FileSystemResource(tempFile));
