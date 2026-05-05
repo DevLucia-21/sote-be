@@ -18,4 +18,8 @@ public class AiClientProperties {
     public void setTimeoutSeconds(int timeoutSeconds) { this.timeoutSeconds = timeoutSeconds; }
 
     private String internalKey;
+
+    public String getInternalKey() { return internalKey; }
+
+    public void setInternalKey(String internalKey) { this.internalKey = internalKey; }
 }

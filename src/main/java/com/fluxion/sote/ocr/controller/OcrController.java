@@ -50,12 +50,14 @@ public class OcrController {
     @PostMapping("/preview")
     public ResponseEntity<Map<String, Object>> previewOcr(
             @RequestParam("file") MultipartFile file,
-            @RequestHeader("Authorization") String authHeader) throws IOException {
+            @RequestHeader("Authorization") String authHeader
+    ) throws IOException {
 
         User user = SecurityUtil.getCurrentUser();
         File tempFile = convertToFile(file);
 
         RestTemplate restTemplate = new RestTemplate();
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.set("Authorization", authHeader);
@@ -63,15 +65,20 @@ public class OcrController {
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new FileSystemResource(tempFile));
-        body.add("user_id", user.getId());  // FastAPI 쪽 Form 파라미터와 통일
+        body.add("user_id", user.getId());
 
-        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        ResponseEntity<Map> fastApiResponse = restTemplate.postForEntity(fastApiOcrUrl, requestEntity, Map.class);
+        HttpEntity<MultiValueMap<String, Object>> requestEntity =
+                new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map> fastApiResponse =
+                restTemplate.postForEntity(fastApiOcrUrl, requestEntity, Map.class);
+
+        Map<?, ?> fastApiBody = fastApiResponse.getBody();
 
         Map<String, Object> response = new HashMap<>();
         response.put("userId", user.getId());
-        response.put("text", fastApiResponse.getBody().get("text"));
-        response.put("imageUrl", fastApiResponse.getBody().get("imageUrl"));
+        response.put("text", fastApiBody != null ? fastApiBody.get("text") : null);
+        response.put("imageUrl", fastApiBody != null ? fastApiBody.get("imageUrl") : null);
         response.put("status", "ok");
 
         return ResponseEntity.ok(response);
@@ -82,34 +89,53 @@ public class OcrController {
     // ====================================================
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> uploadOcr(
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
 
         User user = SecurityUtil.getCurrentUser();
         Long userId = user.getId();
 
         RestTemplate restTemplate = new RestTemplate();
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.set("X-SOTE-AI-KEY", props.getInternalKey());
 
-        // FastAPI로 전송할 FormData 구성
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("file", new MultipartInputStreamFileResource(file.getInputStream(), file.getOriginalFilename()));
+        body.add(
+                "file",
+                new MultipartInputStreamFileResource(
+                        file.getInputStream(),
+                        file.getOriginalFilename()
+                )
+        );
         body.add("user_id", userId);
 
-        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        ResponseEntity<Map> fastApiResponse = restTemplate.postForEntity(fastApiOcrUrl, requestEntity, Map.class);
+        HttpEntity<MultiValueMap<String, Object>> requestEntity =
+                new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map> fastApiResponse =
+                restTemplate.postForEntity(fastApiOcrUrl, requestEntity, Map.class);
+
+        Map<?, ?> fastApiBody = fastApiResponse.getBody();
 
         Map<String, Object> response = new HashMap<>();
         response.put("userId", userId);
-        response.put("text", fastApiResponse.getBody().get("text"));
-        response.put("imageUrl", fastApiResponse.getBody().get("imageUrl"));
-        response.put("status", fastApiResponse.getBody().getOrDefault("status", "success"));
+        response.put("text", fastApiBody != null ? fastApiBody.get("text") : null);
+        response.put("imageUrl", fastApiBody != null ? fastApiBody.get("imageUrl") : null);
+        Object status = fastApiBody != null && fastApiBody.get("status") != null
+                ? fastApiBody.get("status")
+                : "success";
+
+        response.put("status", status);
 
         log.info("[OCR 미리보기 완료] userId={}, file={}, textLength={}",
-                userId, file.getOriginalFilename(),
-                fastApiResponse.getBody().get("text") != null
-                        ? fastApiResponse.getBody().get("text").toString().length()
-                        : 0);
+                userId,
+                file.getOriginalFilename(),
+                fastApiBody != null && fastApiBody.get("text") != null
+                        ? fastApiBody.get("text").toString().length()
+                        : 0
+        );
 
         return ResponseEntity.ok(response);
     }
@@ -118,7 +144,9 @@ public class OcrController {
      * MultipartFile → File 변환 (임시 저장)
      */
     private File convertToFile(MultipartFile multipartFile) throws IOException {
-        File convFile = new File(System.getProperty("java.io.tmpdir") + "/" + multipartFile.getOriginalFilename());
+        File convFile = new File(
+                System.getProperty("java.io.tmpdir") + "/" + multipartFile.getOriginalFilename()
+        );
         multipartFile.transferTo(convFile);
         return convFile;
     }
