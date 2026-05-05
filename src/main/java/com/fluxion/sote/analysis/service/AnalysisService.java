@@ -204,6 +204,7 @@ public class AnalysisService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.set("X-SOTE-AI-KEY", props.getInternalKey());
 
         String url = props.getBaseUrl() + props.getEndpoint();
 
