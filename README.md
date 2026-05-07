@@ -21,8 +21,10 @@
 사용자는 텍스트, 음성, 손글씨 기반으로 일기를 작성할 수 있으며,      
 작성된 일기는 AI 감정 분석을 통해 감정 요약, 추천 음악, 감정 회복 챌린지로 이어집니다.
 
-본 백엔드는 S:ote 서비스의 핵심 API 서버로,      
-사용자 인증, 일기 데이터 관리, AI 분석 서버 연동, 챌린지 추천, 음악 LP 보상, 알림, 통계, STT/OCR, 웨어러블 연동 기능을 담당합니다.
+본 백엔드는 S:ote 서비스의 핵심 API 서버로,     
+사용자 인증, 일기 데이터 관리, AI 분석 결과 저장, 챌린지 추천, 음악 LP 보상, 알림, 통계 기능을 담당합니다.
+
+STT/OCR, Wear OS, 외부 음악 메타데이터와 같이 AI 서버 및 외부 시스템과 연결되는 흐름도 함께 관리합니다.
 
 본 저장소는 Fluxion 팀 캡스톤 프로젝트 **S:ote**의 백엔드 코드를 개인 포트폴리오용으로 정리한 리포지토리입니다.
 
@@ -31,11 +33,11 @@
 | Project                  | S:ote                                                             |
 | Team                     | Fluxion                                                           |
 | Period                   | 2025 Capstone Design                                              |
-| Award                    | 2025 캡스톤 경진대회 아리상                                                 |
+| Award                    | 2025 캡스톤 경진대회 아리상                                         |
 | Repository Type          | Portfolio-maintained backend repository                           |
-| Original Team Repository | [fluxion-capstone/sote](https://github.com/fluxion-capstone/sote) |
+| Original Team Repository | [fluxion-capstone/sote-be](https://github.com/fluxion-capstone/sote-be) |
 | Personal Repository      | [DevLucia-21/sote-be](https://github.com/DevLucia-21/sote-be)     |
-| Main Role                | Backend / AI / Frontend                                           |
+| Main Role                | Backend API, AI integration, service flow stabilization           |
 
 ---
 
@@ -59,7 +61,23 @@ S:ote는 단순히 일기를 저장하는 데 그치지 않고,
 ```
 
 백엔드는 이 흐름이 안정적으로 이어질 수 있도록      
-프론트엔드, FastAPI 기반 AI 서버, Spotify API, Firebase Cloud Messaging, PostgreSQL 데이터베이스 사이의 데이터 흐름을 연결합니다.
+프론트엔드, FastAPI 기반 AI 서버, Spotify API, Firebase Cloud Messaging, PostgreSQL 데이터베이스 사이의      
+데이터 흐름을 연결합니다.
+
+---
+
+## Repository Role
+
+이 저장소는 S:ote 서비스의 Spring Boot 기반 백엔드 API 서버를 담당합니다.
+
+사용자 인증, 일기 저장, 감정 분석 결과 저장, 챌린지 추천, LP 보상, 통계, 알림 설정처럼      
+프론트엔드 화면에서 사용하는 주요 데이터를 API로 제공합니다.
+
+또한 FastAPI 기반 AI 서버, Spotify API, Firebase Cloud Messaging, PostgreSQL, Redis 등       
+외부 시스템과 연결되는 데이터 흐름을 관리합니다.
+
+프로젝트 종료 이후에는 로컬 실행 오류와 배포 환경 설정 문제를 점검하고,     
+공개 포트폴리오용으로 민감 정보 제거, 환경 변수 예시, 브랜치 구조, README를 정리했습니다.
 
 ---
 
@@ -82,17 +100,17 @@ S:ote 백엔드는 단순 CRUD 서버가 아니라,
 
 주요 역할은 다음과 같습니다.
 
-| Area           | Responsibility                       |
-| -------------- | ------------------------------------ |
-| Authentication | JWT 기반 로그인, 인증 사용자 식별, 보호 API 접근 제어  |
-| Diary          | 사용자별 일기 작성, 조회, 수정, 삭제 처리            |
-| AI Analysis    | FastAPI AI 서버와 연동하여 감정 분석 요청 및 결과 저장 |
-| Challenge      | 감정 분석 결과 기반 챌린지 추천, 상태 조회, 완료 처리     |
-| LP Reward      | 챌린지 완료 기반 음악 LP 보상 생성 및 조회           |
+| Area           | Responsibility                                       |
+| -------------- | ---------------------------------------------------- |
+| Authentication | JWT 기반 로그인, 인증 사용자 식별, 보호 API 접근 제어   |
+| Diary          | 사용자별 일기 작성, 조회, 수정, 삭제 처리               |
+| AI Analysis    | FastAPI AI 서버 연동, 감정 분석 요청 및 결과 저장       |
+| Challenge      | 감정 분석 결과 기반 챌린지 추천, 상태 조회, 완료 처리    |
+| LP Reward      | 챌린지 완료 기반 음악 LP 보상 생성 및 조회              |
 | Statistics     | 일기, 감정 분석, 챌린지 수행 기록 기반 통계 제공        |
-| Notification   | FCM 토큰 관리, 사용자 알림 설정, 알림 발송 처리       |
-| STT / OCR      | 음성 및 손글씨 기반 일기 입력을 위한 외부 AI 기능 연동    |
-| Wear OS        | 웨어러블 클라이언트와 연동되는 건강 데이터 흐름 지원        |
+| Notification   | FCM 토큰 관리, 사용자 알림 설정, 알림 발송 처리         |
+| STT / OCR Flow | 음성·손글씨 기반 일기 입력을 위한 외부 AI 처리 흐름 연동 |
+| Wear OS Flow   | 웨어러블 클라이언트와 연동되는 건강 데이터 흐름 지원     |
 
 ---
 
@@ -173,7 +191,8 @@ src/main/java/com/fluxion/sote/lpmusic
 
 ### 6. Spotify Integration
 
-추천 음악의 제목, 아티스트, 앨범, 커버 이미지 등 프론트엔드에 필요한 음악 메타데이터를 제공하기 위해 Spotify API와 연동했습니다.
+추천 음악의 제목, 아티스트, 앨범, 커버 이미지 등 프론트엔드에 필요한 음악 메타데이터를 제공하기 위해       
+Spotify API와 연동했습니다.
 
 백엔드에서는 음악 추천 결과와 LP 보상 데이터가 함께 조회될 수 있도록 음악 메타데이터 흐름을 관리합니다.
 
@@ -217,7 +236,8 @@ src/main/java/com/fluxion/sote/calendar
 
 Firebase Cloud Messaging 기반 알림 기능을 처리합니다.
 
-사용자별 FCM 토큰을 등록하고, 알림 설정에 따라 일기 작성, 챌린지 수행, 감정 분석 완료, 주간 통계 등 서비스 행동을 돕는 알림 흐름을 관리합니다.
+사용자별 FCM 토큰을 등록하고,       
+알림 설정에 따라 일기 작성, 챌린지 수행, 감정 분석 완료, 주간 통계 등 서비스 행동을 돕는 알림 흐름을 관리합니다.
 
 관련 패키지:
 
@@ -280,6 +300,37 @@ LP 보상 생성
         ↓
 FCM 알림을 통한 서비스 행동 리마인드
 ```
+
+---
+
+## My Contribution
+
+본 프로젝트에서는 초기 백엔드와 AI 서버 개발을 함께 담당했으며,     
+프로젝트 진행 과정에서 프론트엔드 개발까지 맡아 전체 서비스 흐름을 구현했습니다.
+
+백엔드에서는 인증, 일기, 감정 분석 연동, 챌린지 추천, 음악 보상, 알림 등 주요 기능 흐름의 구현과 수정에 참여했습니다.
+
+프로젝트 규모가 커지면서 단순 기능 구현보다       
+기능 간 연결, 예외 상황, 배포 환경 설정, 데이터 흐름의 일관성이 중요하다는 점을 경험했습니다.
+
+프로젝트 종료 이후에는 다시 서비스를 실행하며 발견된 오류를 수정하고,     
+백엔드 구조와 기능 흐름을 포트폴리오용으로 재정리했습니다.
+
+최종적으로 백엔드, 프론트엔드, AI 서버가 연결되는 전체 사용자 흐름을 이해하고,     
+공개 리포지토리 전환을 위한 환경 변수 정리, 민감 정보 제거, 브랜치 정리, README 작성까지 담당했습니다.
+
+| Area              | Contribution                                                              |
+| ----------------- | ------------------------------------------------------------------------- |
+| Backend API       | 인증, 일기, 분석 결과, 챌린지, LP 보상, 알림 관련 API 흐름 구현 및 수정       |
+| AI Integration    | FastAPI 기반 감정 분석 서버와 Spring Boot 백엔드 연동 흐름 구성              |
+| Authentication    | JWT 기반 사용자 인증 및 인증 사용자 기준 데이터 처리 흐름 구성                |
+| Challenge Flow    | 감정 분석 기반 챌린지 추천, 오늘의 챌린지 상태, 완료 처리 흐름 점검            |
+| LP Reward Flow    | 챌린지 완료 후 음악 LP 보상 생성 및 조회 흐름 정리                            |
+| Notification      | Firebase Cloud Messaging 기반 토큰 저장 및 알림 처리 흐름 점검               |
+| Data Management   | PostgreSQL, JPA, Flyway 기반 도메인 데이터 관리 구조 유지                    |
+| Deployment Check  | 배포 환경에서 환경변수, API 경로, 외부 인증키 설정 문제 점검                   |
+| Refactoring       | 프로젝트 종료 후 로컬 실행 오류 수정 및 주요 기능 흐름 안정화                  |
+| Portfolio Cleanup | 공개 리포지토리 전환을 위한 민감 정보 제거, 환경 변수 예시, README, 브랜치 정리 |
 
 ---
 
@@ -403,12 +454,13 @@ S:ote는 일기 작성 직후 감정 분석 결과가 즉시 준비되지 않을
 
 로컬 개발 환경에서 정상 동작하던 기능도 Render와 같은 외부 서버 환경에서는 다르게 동작할 수 있었습니다.
 
-배포 과정에서 환경변수 설정 충돌, API 엔드포인트 경로 차이, 인증키 누락, 외부 서버 응답 지연 등의 문제가 반복적으로 발생했습니다.
+배포 과정에서 환경변수 설정 충돌, API 엔드포인트 경로 차이, 인증키 누락, 외부 서버 응답 지연 등의       
+문제가 반복적으로 발생했습니다.
 
 백엔드에서는 실제 배포 환경에 맞추어 설정값을 점검하고,     
 외부 AI 서버, Spotify API, Firebase, GCP Storage와 연결되는 지점을 하나씩 확인하며 오류를 해결했습니다.
 
-이 과정에서 단순히 코드를 작성하는 것뿐만 아니라,
+이 과정에서 단순히 코드를 작성하는 것뿐만 아니라,     
 실행 환경과 설정 관리까지 포함해 서비스를 안정화하는 과정이 중요하다는 것을 배웠습니다.
 
 ---
@@ -426,40 +478,12 @@ S:ote는 FastAPI AI 서버, Spotify API, Firebase Cloud Messaging, Google Cloud 
 
 ### 7. 공개 리포지토리 전환을 위한 보안 설정 정리
 
-포트폴리오 공개 리포지토리로 전환하면서 실제 DB 접속 정보, JWT Secret, Spotify Secret, Firebase Admin SDK JSON, GCP 인증 파일 등 민감 정보를 저장소에서 제외했습니다.
+포트폴리오 공개 리포지토리로 전환하면서      
+실제 DB 접속 정보, JWT Secret, Spotify Secret, Firebase Admin SDK JSON, GCP 인증 파일 등       
+민감 정보를 저장소에서 제외했습니다.
 
 실행에 필요한 설정값은 `application.yml`에 직접 포함하지 않고,      
 `application-example.yml`을 통해 필요한 환경 변수 구조만 확인할 수 있도록 정리했습니다.
-
----
-
-## My Contribution
-
-본 프로젝트에서는 초기 백엔드와 AI 서버 개발을 함께 담당했으며,     
-프로젝트 진행 과정에서 프론트엔드 개발까지 맡아 전체 서비스 흐름을 구현했습니다.
-
-백엔드에서는 인증, 일기, 감정 분석 연동, 챌린지 추천, 음악 보상, 알림 등 주요 기능 흐름의 구현과 수정에 참여했습니다.
-
-프로젝트 규모가 커지면서 단순 기능 구현보다 기능 간 연결, 예외 상황, 배포 환경 설정, 데이터 흐름의 일관성이 중요하다는 점을 경험했습니다.
-
-프로젝트 종료 이후에는 다시 서비스를 실행하며 발견된 오류를 수정하고,     
-백엔드 구조와 기능 흐름을 포트폴리오용으로 재정리했습니다.
-
-최종적으로 백엔드, 프론트엔드, AI 서버가 연결되는 전체 사용자 흐름을 이해하고,     
-공개 리포지토리 전환을 위한 환경 변수 정리, 민감 정보 제거, 브랜치 정리, README 작성까지 담당했습니다.
-
-| Area              | Contribution                                       |
-| ----------------- | -------------------------------------------------- |
-| Backend API       | 인증, 일기, 분석 결과, 챌린지, LP 보상, 알림 관련 API 흐름 구현 및 수정    |
-| AI Integration    | FastAPI 기반 감정 분석 서버와 Spring Boot 백엔드 연동 흐름 구성      |
-| Authentication    | JWT 기반 사용자 인증 및 인증 사용자 기준 데이터 처리 흐름 구성             |
-| Challenge Flow    | 감정 분석 기반 챌린지 추천, 오늘의 챌린지 상태, 완료 처리 흐름 점검           |
-| LP Reward Flow    | 챌린지 완료 후 음악 LP 보상 생성 및 조회 흐름 정리                    |
-| Notification      | Firebase Cloud Messaging 기반 토큰 저장 및 알림 처리 흐름 점검    |
-| Data Management   | PostgreSQL, JPA, Flyway 기반 도메인 데이터 관리 구조 유지        |
-| Deployment Check  | 배포 환경에서 환경변수, API 경로, 외부 인증키 설정 문제 점검              |
-| Refactoring       | 프로젝트 종료 후 로컬 실행 오류 수정 및 주요 기능 흐름 안정화               |
-| Portfolio Cleanup | 공개 리포지토리 전환을 위한 민감 정보 제거, 환경 변수 예시, README, 브랜치 정리 |
 
 ---
 
@@ -568,18 +592,8 @@ gradlew.bat bootRun
 | [sote-fe](https://github.com/DevLucia-21/sote-fe)                 | S:ote 프론트엔드 리포지토리        |
 | [sote-be](https://github.com/DevLucia-21/sote-be)                 | Spring Boot 기반 백엔드 리포지토리 |
 | [sote-ai](https://github.com/DevLucia-21/sote-ai)                 | FastAPI 기반 AI 서버 리포지토리   |
-| [fluxion-capstone/sote](https://github.com/fluxion-capstone/sote) | S:ote 원본 팀 백엔드 리포지토리     |
 
----
-
-## Note
-
-본 저장소는 Fluxion 팀 캡스톤 프로젝트의 백엔드 코드를 개인 포트폴리오용으로 정리한 리포지토리입니다.
-
-실제 운영 환경에서 사용한 민감 설정값은 포함하지 않으며,       
-로컬 실행을 위해서는 별도의 환경 변수 및 외부 서비스 설정이 필요합니다.
-
-원본 팀 리포지토리는 팀 프로젝트 진행 당시 사용한 저장소이며, 현재 접근 권한 또는 공개 여부가 변경되었을 수 있습니다.
+본 저장소는 Fluxion 팀 프로젝트의 백엔드 코드를 개인 포트폴리오용으로 정리한 리포지토리입니다.
 
 ---
 
