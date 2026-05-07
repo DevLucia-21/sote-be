@@ -14,7 +14,7 @@
 
 ---
 
-## Refactor Scope
+## Branch Scope
 
 본 브랜치에서는 다음 백엔드 흐름을 중심으로 정리했습니다.
 
