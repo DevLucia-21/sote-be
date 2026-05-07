@@ -17,7 +17,7 @@
 
 ---
 
-## Development Scope
+## Branch Scope
 
 본 브랜치에서는 다음 백엔드 기능 개발을 중심으로 작업했습니다.
 
